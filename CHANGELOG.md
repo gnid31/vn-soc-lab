@@ -9,4 +9,5 @@
 [2026-06-25 02:20] [actor=claude] [phase=2] chuẩn bị prompt cho Antigravity setup Sysmon + Winlogbeat trên Win10 (xem roadmap.md §A.1)
 [2026-06-25 02:30] [actor=claude] [phase=0] init repo private vn-soc-lab; tách docs cũ thành report.md + roadmap.md theo nguyên tắc deploy-then-document
 [2026-06-25 13:35] [actor=antigravity] [phase=2] hoàn tất cài đặt và cấu hình Sysmon + Winlogbeat trên Win10, kết nối Logstash:5044 thành công
+[2026-06-25 14:10] [actor=claude] [phase=2] verify Pha 2 từ VPS — Logstash events_in=4493, ES index winlogbeat-2026.06.25 có 4417 docs, hostname DESKTOP-L7FCMBQ, tags đầy đủ; bổ sung §5.4 vào report.md
 
