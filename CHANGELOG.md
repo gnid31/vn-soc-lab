@@ -11,4 +11,5 @@
 [2026-06-25 13:35] [actor=antigravity] [phase=2] hoàn tất cài đặt và cấu hình Sysmon + Winlogbeat trên Win10, kết nối Logstash:5044 thành công
 [2026-06-25 14:10] [actor=claude] [phase=2] verify Pha 2 từ VPS — Logstash events_in=4493, ES index winlogbeat-2026.06.25 có 4417 docs, hostname DESKTOP-L7FCMBQ, tags đầy đủ; bổ sung §5.4 vào report.md
 [2026-06-25 14:30] [actor=claude] [phase=2] audit Sysmon — 2675 docs, breakdown event_id 1/3/11/13/22; ghi §5.4.1 + §5.4.2 phát hiện event.action override bởi Winlogbeat processor + winlog.event_id là text field không aggregate được trực tiếp
+[2026-06-25 14:45] [actor=claude] [phase=3] scaffold detection-rules/ — README (cookbook + bảng KQL field map cho Sysmon raw) + spec R1 PowerShell EncodedCommand làm template. Các rule còn lại (R3/R4/R5) sẽ do namth tự viết spec theo cùng template khi tạo trên Kibana UI
 

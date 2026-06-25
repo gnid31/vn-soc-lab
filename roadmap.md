@@ -141,7 +141,7 @@ Di chuyển nội dung sang `report.md` §5:
 
 | # | Rule | MITRE Technique | Query mẫu (KQL) |
 |---|---|---|---|
-| R1 | PowerShell EncodedCommand | T1059.001 | `event.action: process_creation AND process.command_line: *encodedcommand*` |
+| R1 | PowerShell EncodedCommand | T1059.001 | spec viết xong → [detection-rules/R1](detection-rules/R1-T1059.001-powershell-encoded.md) |
 | R2 | LSASS access (Mimikatz-style) | T1003.001 | `event.action: process_access AND winlog.event_data.TargetImage: *lsass.exe*` |
 | R3 | Registry Run Key persistence | T1547.001 | `event.action: registry_value_set AND registry.path: *Run*` |
 | R4 | Brute-force login | T1110 | `event.action: logon_failed` threshold ≥5 trong 1 phút cùng `user.name` |
