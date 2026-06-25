@@ -1,11 +1,51 @@
 # Detection Rules — Pha 3
 
-Mỗi rule trong thư mục này là một file Markdown đặc tả + (sau khi import vào Kibana) một bản export NDJSON đi kèm. Quy ước đặt tên:
+Mỗi rule trong thư mục này là một file Markdown đặc tả + (sau khi import vào Kibana) một bản export NDJSON đi kèm.
+
+## Convention chung — đặt tên & metadata
+
+### Tên file + `rule_id` (kebab-case)
 
 ```
-R<N>-T<MITRE_TECHNIQUE>-<slug>.md      ← spec & lý do
-R<N>-T<MITRE_TECHNIQUE>-<slug>.ndjson  ← export Kibana (commit khi đã enable rule trên UI)
+File   : R<N>-<TECHNIQUE-ID>-<slug>.md
+rule_id: vnsoc-r<n>-<slug>
 ```
+
+- `<TECHNIQUE-ID>`: dùng sub-technique nếu MITRE có (vd `T1059.001`), không thì parent (`T1110`).
+- `<slug>`: 2–4 từ kebab-case, miêu tả ngắn.
+
+### Display name (hiển thị trên Kibana)
+
+```
+[VN-SOC R<N>] <Technique description Title Case>
+```
+
+- Luôn prefix `[VN-SOC R<N>]` để filter dễ.
+- Mô tả **technique-focused** (việc attacker làm), KHÔNG tactic-focused.
+- Title Case, ≤ 70 ký tự.
+- KHÔNG đưa threshold detail (vd "5 fails / 5 min") vào tên — đẩy xuống Description.
+
+### Tags — 4 tag chuẩn
+
+```
+['VN-SOC-Lab', '<Tactic-PascalCase>', '<TechniqueID>', '<Concept-1-từ>']
+```
+
+| Tag # | Vai trò | Ví dụ |
+|---|---|---|
+| 1 | Identifier lab — filter tất cả rule lab này | `VN-SOC-Lab` (cố định) |
+| 2 | MITRE Tactic, PascalCase | `Execution`, `Persistence`, `CredentialAccess`, `CommandAndControl`, `Discovery`, `LateralMovement`, `Exfiltration`, `Impact`, `InitialAccess`, `DefenseEvasion`, `PrivilegeEscalation`, `Collection`, `Reconnaissance`, `ResourceDevelopment` |
+| 3 | MITRE Technique ID | `T1059.001`, `T1547.001`, `T1110`, `T1003.001`, `T1071.001` |
+| 4 | Concept keyword 1 từ | `PowerShell`, `LSASS`, `RunKey`, `BruteForce`, `NonBrowser` |
+
+### Severity ↔ Risk score
+
+| Severity | Risk score | Khi nào dùng |
+|---|---|---|
+| Low | 21 | Recon, info gathering — không có hành vi gây hại |
+| Medium | 47 | Persistence (chưa active), một số C2 beacon |
+| High | 73 | Execution có context xấu, Brute force, Network connection từ binary lạ |
+| Critical | 90 | Credential Access thành công (LSASS dump), Impact (ransomware, wipe) |
 
 ## Quy ước viết KQL trong VN-SOC Lab
 
@@ -51,12 +91,19 @@ Vì lab này:
 
 ## Trạng thái 5 rule đăng ký
 
-| ID | Tên | MITRE | Spec | Đã enable trên Kibana | Verify trigger |
-|---|---|---|---|---|---|
-| R1 | PowerShell EncodedCommand | T1059.001 | [R1](R1-T1059.001-powershell-encoded.md) | ✅ | ✅ 2026-06-25 |
-| R2 | LSASS access (Mimikatz-style) | T1003.001 | _backlog_ | — | — |
-| R3 | Registry Run Key persistence | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ⏳ | ⏳ |
-| R4 | Brute-force login | T1110 | _backlog_ | — | — |
-| R5 | Non-browser outbound | T1071 | _backlog_ | — | — |
+| ID | Display name | MITRE | Spec | Enabled | Verify | Alerts fired |
+|---|---|---|---|---|---|---|
+| R1 | `[VN-SOC R1] PowerShell Encoded Command Execution` | T1059.001 | [R1](R1-T1059.001-powershell-encoded.md) | ✅ | ✅ 2026-06-25 | 5+1 |
+| R2 | `[VN-SOC R2] LSASS Memory Access` | T1003.001 | [R2](R2-T1003.001-lsass-access.md) | ✅ | ⏳ Pha 4 | 0 (chưa test) |
+| R3 | `[VN-SOC R3] Registry Run Key Modification` | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ✅ | ✅ 2026-06-25 | 4 |
+| R4 | `[VN-SOC R4] Multiple Failed Logon — Brute Force` | T1110 | [R4](R4-T1110-brute-force-login.md) | ✅ | ✅ 2026-06-25 (sau fix config) | 1 |
+| R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | [R5](R5-T1071.001-non-browser-outbound.md) | ✅ | ✅ 2026-06-25 (có FP) | 30 |
 
-R2/R4/R5 sẽ được thêm khi R1+R3 đã verified trigger và viết được Incident Report mẫu.
+## Pitfalls / Lessons learned trong Pha 3
+
+| # | Bài học | Rule liên quan | Detail |
+|---|---|---|---|
+| 1 | KQL wildcard fail trên text field có `\` hoặc space | R1 | Phải dùng `.keyword` cho path/command. Xem [R1 §2a](R1-T1059.001-powershell-encoded.md#2a-bài-học-quan-trọng--khi-nào-phải-dùng-keyword) |
+| 2 | Threshold field vs Cardinality field trong Kibana UI | R4 | 2 setting nhìn giống nhau, đặt sai → rule không fire dù status=succeeded. Xem [R4 §2.2](R4-T1110-brute-force-login.md#22-threshold-setting) |
+| 3 | "Known-good tool with malware-like behavior" | R5 | Antigravity (`agy.exe`) trong `%APPDATA%` gọi HTTPS → R5 fire 30 alerts đúng pattern beacon. Xem [R5 §4](R5-T1071.001-non-browser-outbound.md#4-false-positive-thường-gặp--cách-lọc) |
+| 4 | Kibana "Detection Engine permissions required" thật ra do thiếu encryption keys | (toàn bộ) | Setup Kibana 8.x không tự sinh keys. Xem [report.md §6.7](../report.md) |
