@@ -411,6 +411,60 @@ curl -sk -u "elastic:$PASSWORD" \
   "https://localhost:9200/winlogbeat-*/_search?size=1&sort=@timestamp:desc&pretty"
 ```
 
+### 5.4.1 Audit Sysmon — breakdown event_id thực tế
+
+Aggregation `winlog.channel = "Microsoft-Windows-Sysmon/Operational"` trên 2675 Sysmon docs:
+
+| Count | event_id | Loại | MITRE liên quan |
+|---:|---:|---|---|
+| 2038 | 13 | Registry value set | T1547.001 Run keys, T1112 modify registry |
+| 276 | 11 | File create | T1105 ingress tool transfer, T1027 drop |
+| 275 | 1 | Process creation | T1059 (PowerShell/CMD execution) |
+| 60 | 22 | DNS query | T1071.004 / T1568.002 C2 |
+| 25 | 3 | Network connection | T1071.001 web protocol |
+| 3 | 5 | Process terminated | (signal, không có MITRE trực tiếp) |
+| 1 | 16 | Sysmon config changed | (self-monitoring) |
+| 1 | 4 | Sysmon state changed | (self-monitoring) |
+
+→ Đủ data type cho **R1, R3, R5** trong roadmap Pha 3 (ngay lập tức). **R2** (LSASS access — Sysmon event_id 10) hiện 0 hit vì SwiftOnSecurity chỉ log khi truy cập đáng ngờ; cần Pha 4 chạy Atomic T1003 để sinh. **R4** (brute-force) dùng Security channel chứ không Sysmon — vẫn khả thi vì Winlogbeat đang thu Security channel.
+
+### 5.4.2 Phát hiện kỹ thuật cần biết khi viết KQL (Pha 3)
+
+**Vấn đề 1 — `event.action` không khớp pipeline `translate` thiết kế.**
+
+Pipeline `winlogbeat.conf` thiết kế ghi `event.action = "process_creation"` (snake_case). Thực tế trong ES:
+
+```
+event.action = "Process Create (rule: ProcessCreate)"
+```
+
+Nguyên nhân: Winlogbeat 8.x có built-in processor đọc trường `RuleName` của Sysmon, set `event.action` **trước khi** event đi qua Logstash. Filter `translate` của mình mặc định `override => false` nên không ghi đè field đã tồn tại.
+
+→ **Không phải bug, là design difference.** Winlogbeat-native gán cụ thể hơn (kèm rule name) → giữ nguyên cho Pha 3, viết KQL dùng `winlog.event_id` thay vì phụ thuộc `event.action` format.
+
+**Vấn đề 2 — `winlog.event_id` đang là kiểu `text`, không phải `keyword`.**
+
+ES trả lỗi `Fielddata is disabled on [winlog.event_id]` khi aggregate trực tiếp:
+
+```
+illegal_argument_exception: Fielddata is disabled on [winlog.event_id] ...
+Please use a keyword field instead.
+```
+
+Phải dùng `winlog.event_id.keyword` cho mọi aggregation / sort / threshold rule. Nguyên nhân: pipeline tạo index bằng default template của Logstash, không phải Winlogbeat index template (vốn map đúng ECS).
+
+→ **Khắc phục dài hạn (đề xuất Pha 3+):** chạy `winlogbeat setup --index-management -E output.elasticsearch.hosts=https://43.228.215.234:9200` (1 lần, trực tiếp từ endpoint vào ES) để cài index template chuẩn. Cho lab hiện tại chấp nhận dùng `.keyword` suffix trong KQL.
+
+**KQL pattern an toàn cho Pha 3:**
+
+```
+# An toàn:
+winlog.event_id: "1" AND winlog.provider_name: "Microsoft-Windows-Sysmon"
+
+# Tránh — phụ thuộc text Winlogbeat parse (có thể đổi theo version):
+event.action: "Process Create (rule: ProcessCreate)"
+```
+
 ### 5.5 Trạng thái cuối Pha 2
 
 | Hạng mục | Kết quả |

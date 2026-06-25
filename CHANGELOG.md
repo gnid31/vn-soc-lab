@@ -10,4 +10,5 @@
 [2026-06-25 02:30] [actor=claude] [phase=0] init repo private vn-soc-lab; tách docs cũ thành report.md + roadmap.md theo nguyên tắc deploy-then-document
 [2026-06-25 13:35] [actor=antigravity] [phase=2] hoàn tất cài đặt và cấu hình Sysmon + Winlogbeat trên Win10, kết nối Logstash:5044 thành công
 [2026-06-25 14:10] [actor=claude] [phase=2] verify Pha 2 từ VPS — Logstash events_in=4493, ES index winlogbeat-2026.06.25 có 4417 docs, hostname DESKTOP-L7FCMBQ, tags đầy đủ; bổ sung §5.4 vào report.md
+[2026-06-25 14:30] [actor=claude] [phase=2] audit Sysmon — 2675 docs, breakdown event_id 1/3/11/13/22; ghi §5.4.1 + §5.4.2 phát hiện event.action override bởi Winlogbeat processor + winlog.event_id là text field không aggregate được trực tiếp
 
