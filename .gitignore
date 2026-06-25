@@ -1,0 +1,41 @@
+# === Secrets (NEVER commit) ===
+*credentials*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*-token*
+.env
+.env.*
+!.env.example
+
+# === Editor / OS ===
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# === Logs / scratch ===
+*.log
+/tmp/
+scratch/
+*.bak
+
+# === Local Antigravity / Claude state ===
+.claude/
+.antigravity/
+.gemini/
+
+# === Test exports that might contain real IPs/users ===
+*.ndjson.local
+*_dump.json
+
+# === Python / build artifacts (in case scripts get added) ===
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
