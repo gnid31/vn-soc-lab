@@ -10,20 +10,21 @@
 | File | Purpose |
 |---|---|
 | [`report.md`](report.md) | **Main deliverable** — describes only what has actually been built and verified. Updated incrementally as each phase ships. (Vietnamese) |
+| [`pha4-results.md`](pha4-results.md) | Phase 4 adversary emulation results + 6 lessons learned + Antigravity workflow notes. (Vietnamese) |
 | [`roadmap.md`](roadmap.md) | Plans, design notes, and pending phases. Content graduates into `report.md` once executed. (Vietnamese) |
 | [`CHANGELOG.md`](CHANGELOG.md) | Append-only log — one line per change, with timestamp + actor. |
-| [`AGENTS.md`](AGENTS.md) | Working protocol for the two AI agents collaborating on this repo (Claude Code on Kali, Antigravity on Windows 10). |
+| [`AGENTS.md`](AGENTS.md) | Working protocol for AI multi-agent collaboration (OPTIONAL — see file). |
 | `configs/` | Production configuration files (Logstash pipeline, Winlogbeat YAML, Sysmon XML). |
-| `detection-rules/` | Kibana detection rules — one Markdown explanation file plus the NDJSON export per rule. |
-| `incidents/` | Incident Reports written against simulated attack chains (Phase 5). |
+| `detection-rules/` | 5 Kibana detection rules — KQL spec, MITRE mapping, smoke-test, FP analysis. |
+| [`incidents/`](incidents/) | Incident Reports following NIST 800-61 Rev2 format with KQL pivot evidence. |
 
 ## Current status (high level)
 
-- ✅ **Phase 1 — SIEM Backend.** Bare-metal Elasticsearch 8.19.17 + Kibana + Logstash on Ubuntu 24.04 VPS. UFW hardened, TLS internal, secrets stored chmod 600.
-- 🔄 **Phase 2 — Endpoint Telemetry.** Sysmon (SwiftOnSecurity config) + Winlogbeat 8.x ship logs from Windows 10 victim to Logstash:5044.
-- ⏳ Phase 3 — Detection Engineering (MITRE ATT&CK rules in Kibana).
-- ⏳ Phase 4 — Adversary Emulation (Atomic Red Team).
-- ⏳ Phase 5 — Incident Response & documentation.
+- ✅ **Phase 1 — SIEM Backend.** Bare-metal Elasticsearch 8.19.17 + Kibana + Logstash on Ubuntu 24.04 VPS. UFW hardened, TLS internal, Kibana encryption keys in keystore, secrets stored chmod 600.
+- ✅ **Phase 2 — Endpoint Telemetry.** Sysmon (SwiftOnSecurity config + custom VN-SOC-R2 ProcessAccess rule) + Winlogbeat 8.x ship logs from Windows 10 victim to Logstash:5044. 4400+ events including 2675 Sysmon e1/3/11/13/22 + 37 e10.
+- ✅ **Phase 3 — Detection Engineering.** 5 KQL rules in Kibana mapping MITRE ATT&CK: T1059.001, T1003.001, T1547.001, T1110, T1071.001. Each rule includes severity/risk_score/MITRE technique/threshold or query type/false-positive analysis.
+- ✅ **Phase 4 — Adversary Emulation.** Atomic Red Team executions for T1003.001 / T1547.001 / T1071.001. **6 documented lessons learned**: Sysmon config gaps, AI safety filter limits, PowerShell elevation pitfalls, known-good-tools-with-malware-behavior, KQL syntax review, query time-window pitfall. R5 false-positive tuned (100% noise reduction from `agy.exe`).
+- ✅ **Phase 5 — Incident Response.** NIST 800-61 Rev2 format Incident Report ([`VN-SOC-2026-0001`](incidents/VN-SOC-2026-0001-killchain.md)) reconstructing adversary kill-chain (Persistence → Execution → Credential Access) from real lab alerts. Plus reusable [template](incidents/template-incident-report.md).
 
 See [`report.md`](report.md) for the full technical write-up (Vietnamese).
 

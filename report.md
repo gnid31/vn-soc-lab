@@ -1195,6 +1195,13 @@ Phần "còn thiếu" sẽ đề cập trong `roadmap.md §G` (mở rộng nếu
 | Multi-agent collaboration | Claude Code (Kali) + Antigravity (Win10) cùng sửa 1 repo qua git | `AGENTS.md` §2 |
 | AI tooling automation | SSH automation từ Claude, PowerShell automation từ Antigravity | toàn bộ Pha 1-2 |
 | Endpoint detection design | Sysmon event_id breakdown, MITRE mapping, KQL safe pattern | §5.6.1 + §5.6.2 |
+| Detection engineering | 5 KQL detection rules (custom query + threshold) mapping MITRE ATT&CK | `detection-rules/` |
+| Adversary emulation | Atomic Red Team T1003.001 / T1547.001 / T1071.001 với cleanup safety + 5 lessons learned | `pha4-results.md` |
+| Sysmon config tuning | Edit XML config thêm ProcessAccess RuleGroup, validate via `-c` | `pha4-results.md §Lesson 1` |
+| Incident response writeup | NIST 800-61 format Incident Report với KQL pivot + IoC extract + kill-chain narrative | `incidents/VN-SOC-2026-0001-killchain.md` |
+| MITRE ATT&CK kill-chain mapping | 3 tactics chained (Persistence T1547 / Execution T1059 / Credential Access T1110) trong 18 phút | `incidents/VN-SOC-2026-0001 §2` |
+| Log analysis pivot | ProcessGuid pivot, parent-child process tree, KQL multi-field correlation | `incidents/VN-SOC-2026-0001 §3 + §8.A` |
+| False-positive tuning | R5 exclude `agy.exe` (Antigravity) — FP reduced 100% | `pha4-results.md §Lesson 4` |
 
 ---
 

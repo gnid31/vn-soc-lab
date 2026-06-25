@@ -12,7 +12,7 @@
 | 2 | Endpoint Telemetry | T1 D4–D5 | ✅ Hoàn tất (xem report) |
 | 3 | Detection Engineering | T1 D6–T2 D2 | ✅ Hoàn tất (5 rule deployed, 4 smoke-tested, R2 defer Pha 4) |
 | 4 | Adversary Emulation | T2 D3–D4 | 🔄 Sẵn sàng — bao gồm test R2 + tune R5 FP `agy.exe` |
-| 5 | Incident Response & Documentation | T2 D5–D7 | ⏳ Pending |
+| 5 | Incident Response & Documentation | T2 D5–D7 | ✅ Hoàn tất (Incident Report VN-SOC-2026-0001 + template) |
 
 ---
 
