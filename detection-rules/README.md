@@ -53,7 +53,7 @@ Vì lab này:
 
 | ID | Tên | MITRE | Spec | Đã enable trên Kibana | Verify trigger |
 |---|---|---|---|---|---|
-| R1 | PowerShell EncodedCommand | T1059.001 | [R1](R1-T1059.001-powershell-encoded.md) | ⏳ | ⏳ |
+| R1 | PowerShell EncodedCommand | T1059.001 | [R1](R1-T1059.001-powershell-encoded.md) | ✅ | ✅ 2026-06-25 |
 | R2 | LSASS access (Mimikatz-style) | T1003.001 | _backlog_ | — | — |
 | R3 | Registry Run Key persistence | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ⏳ | ⏳ |
 | R4 | Brute-force login | T1110 | _backlog_ | — | — |
