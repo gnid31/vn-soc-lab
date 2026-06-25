@@ -94,7 +94,7 @@ Vì lab này:
 | ID | Display name | MITRE | Spec | Enabled | Verify | Alerts fired |
 |---|---|---|---|---|---|---|
 | R1 | `[VN-SOC R1] PowerShell Encoded Command Execution` | T1059.001 | [R1](R1-T1059.001-powershell-encoded.md) | ✅ | ✅ 2026-06-25 | 5+1 |
-| R2 | `[VN-SOC R2] LSASS Memory Access` | T1003.001 | [R2](R2-T1003.001-lsass-access.md) | ✅ | ⏳ Pha 4 | 0 (chưa test) |
+| R2 | `[VN-SOC R2] LSASS Memory Access` | T1003.001 | [R2](R2-T1003.001-lsass-access.md) | ✅ | ✅ 2026-06-25 (FP: MsMpEng) | 1 (Defender FP) |
 | R3 | `[VN-SOC R3] Registry Run Key Modification` | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ✅ | ✅ 2026-06-25 | 4 |
 | R4 | `[VN-SOC R4] Multiple Failed Logon — Brute Force` | T1110 | [R4](R4-T1110-brute-force-login.md) | ✅ | ✅ 2026-06-25 (sau fix config) | 1 |
 | R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | [R5](R5-T1071.001-non-browser-outbound.md) | ✅ | ✅ 2026-06-25 + tuned (FP -100%) | 55 → 0 sau tune |
@@ -107,3 +107,5 @@ Vì lab này:
 | 2 | Threshold field vs Cardinality field trong Kibana UI | R4 | 2 setting nhìn giống nhau, đặt sai → rule không fire dù status=succeeded. Xem [R4 §2.2](R4-T1110-brute-force-login.md#22-threshold-setting) |
 | 3 | "Known-good tool with malware-like behavior" | R5 | Antigravity (`agy.exe`) trong `%APPDATA%` gọi HTTPS → R5 fire 30 alerts đúng pattern beacon. Xem [R5 §4](R5-T1071.001-non-browser-outbound.md#4-false-positive-thường-gặp--cách-lọc) |
 | 4 | Kibana "Detection Engine permissions required" thật ra do thiếu encryption keys | (toàn bộ) | Setup Kibana 8.x không tự sinh keys. Xem [report.md §6.7](../report.md) |
+| 5 | KQL OR syntax pitfall — quên `OR` giữa item trong exclude list | R5 tune | status=succeeded KHÔNG đảm bảo logic. Acceptance test: query sample alert post-save. Xem [pha4-results §Lesson 5](../pha4-results.md) |
+| 6 | Verify alert query time window quá hẹp → miss event | R2 verify | Atomic test event có thể ngoài window `now-30m` do shipping delay + rule schedule. Mở rộng range hoặc query no-time-filter. Xem [pha4-results §8](../pha4-results.md) |
