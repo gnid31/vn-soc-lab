@@ -1,7 +1,9 @@
-# AGENTS.md — Protocol cho cả Claude Code và Antigravity (Gemini)
+# AGENTS.md — Protocol cho multi-agent collaboration (OPTIONAL)
 
-> **Bắt buộc đọc trước khi sửa repo này.**
-> File này dành cho **AI agent** (Claude Code trên Kali, Antigravity/Gemini trên Win10) và **người dùng** — quy tắc giống nhau.
+> **TÙY CHỌN — file này KHÔNG bắt buộc cho người reproduce lab.**
+> Áp dụng khi có ≥2 actor (vd Claude Code trên Kali + Antigravity trên Win10) cùng sửa repo song song. Solo human user chỉ commit theo workflow git thông thường — bỏ qua file này không ảnh hưởng dự án.
+>
+> Nội dung dưới đây quy định protocol cho trường hợp multi-agent.
 
 ---
 
@@ -78,7 +80,7 @@ final commit      ← không có "final" trong git
 Mỗi sửa file `report.md` PHẢI append 1 dòng vào `CHANGELOG.md`:
 
 ```
-[YYYY-MM-DD HH:MM] [actor=claude|antigravity|namth] [phase=N] mô tả ngắn (1 dòng)
+[YYYY-MM-DD HH:MM] [actor=claude|antigravity|gnid31] [phase=N] mô tả ngắn (1 dòng)
 ```
 
 Dòng mới luôn ở **cuối file** (append-only, không insert giữa, không sửa dòng cũ).

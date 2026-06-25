@@ -10,7 +10,7 @@
 | Mục | Giá trị |
 |---|---|
 | Tên dự án | VN-SOC Lab |
-| Tác giả | namth (`gnid31`) |
+| Tác giả | `gnid31` |
 | Bắt đầu | 2026-06-23 |
 | Cập nhật cuối | 2026-06-25 |
 | Trạng thái | ✅ Pha 1 & 2 hoàn tất — Pha 3 đang khởi động |
@@ -708,9 +708,15 @@ sudo /usr/share/kibana/bin/kibana-keystore list
 → Sysmon là **tiêu chuẩn de facto** cho endpoint telemetry trong SOC.
 → **SwiftOnSecurity config** = file XML mở rộng của cộng đồng, đã loại noise event điển hình (vd background scheduler, telemetry MS), giữ lại event có giá trị detection.
 
-### 5.2 Prompt sử dụng với Antigravity (Google AI agent) trên Win10
+### 5.2 Prompt sử dụng với Antigravity (Google AI agent) trên Win10 — TÙY CHỌN
 
 Antigravity chạy as Administrator trên Win10 sẽ thực hiện toàn bộ install + cấu hình. Prompt không chứa credential Elastic — Winlogbeat chỉ nói với Logstash:5044, không cần password.
+
+> 🔧 **Reproducibility without AI:** Nếu bạn không có Antigravity hoặc không muốn dùng AI agent, **bỏ qua phần prompt dưới** và làm trực tiếp 2 bước manual:
+> 1. **§5.3** — install Sysmon (PowerShell native commands, copy-paste).
+> 2. **§5.4** — install Winlogbeat + cấu hình `winlogbeat.yml` (đã có YAML đầy đủ inline).
+>
+> Cả 2 bước manual đó **tương đương** với mọi thứ trong prompt Antigravity. Mục đích section này chỉ để document cách team original dùng AI accelerator.
 
 ````
 Hãy cài và cấu hình Sysmon + Winlogbeat trên máy Windows 10 này

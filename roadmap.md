@@ -18,9 +18,11 @@
 
 ## A. Pha 2 — Endpoint Telemetry (kế hoạch)
 
-### A.1 Prompt cho Antigravity (chạy trên Win10)
+### A.1 Prompt cho Antigravity (chạy trên Win10) — HOẶC paste manual
 
 > ⚠️ Prompt này KHÔNG chứa password Elastic — Winlogbeat chỉ nói với Logstash:5044, không cần credential ES.
+>
+> **Reproducibility without AI:** prompt dưới đây là content text mà Antigravity sẽ thực thi từng bước. Nếu bạn KHÔNG dùng AI agent, **mở PowerShell as Administrator trên Win10 và copy-paste từng đoạn lệnh [1]/[2]/[3]/...** trong prompt vào terminal. Mọi command đều là PowerShell native, không có dependency AI. Hướng dẫn chi tiết step-by-step manual cũng có trong [`report.md §5.3`](report.md) (Sysmon install) và [`report.md §5.4`](report.md) (Winlogbeat install).
 
 ````
 Hãy cài và cấu hình Sysmon + Winlogbeat trên máy Windows 10 này
@@ -228,7 +230,7 @@ INCIDENT REPORT — VN-SOC-2026-0001
 Severity:       High
 Status:         Contained
 Date detected:  YYYY-MM-DD HH:MM UTC+7
-Reporter:       namth (SOC Analyst T1)
+Reporter:       gnid31 (SOC Analyst T1)
 
 [EXECUTIVE SUMMARY]   3-5 dòng, ngôn ngữ business
 

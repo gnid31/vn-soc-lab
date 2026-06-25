@@ -43,8 +43,18 @@ Most SOC intern CVs list tutorial certifications and toy projects. This repo is 
 
 > "I deployed bare-metal Elastic 8.x with hardened defaults, built a Logstash pipeline that normalises Sysmon events to ECS v8, then wrote N detection rules mapped to MITRE ATT&CK and validated them with Atomic Red Team. Here is the commit history."
 
+## Reproducibility — re-deploy the lab WITHOUT any AI tool
+
+This repo is **AI-accelerated, not AI-dependent**. Every step has a manual command path that any SOC engineer can copy-paste into their own SSH / PowerShell terminal. AI agents (Claude Code on Kali, Antigravity on Win10) were used to drive automation faster during the original build — but the docs are written so a reader with no AI access can rebuild the lab in ~4 hours by:
+
+1. Reading [`report.md`](report.md) section-by-section and pasting shell commands directly.
+2. Following [`detection-rules/`](detection-rules/) specs (`§5 Kibana UI steps`, `§6 Smoke-test`) which are pure CLI / GUI instructions.
+3. Skipping any block labelled "Antigravity prompt" or "AI prompt" — these are accelerators, not required steps. Equivalent manual commands are provided alongside.
+
+The only artifact that is AI-workflow-specific is [`AGENTS.md`](AGENTS.md) (multi-agent git protocol) — solo human users can ignore it.
+
 ## License & access
 
 Private repository. Access granted on a per-recruiter basis via GitHub invitation.
 
-— *namth (`gnid31`), Vietnam, 2026.*
+— *`gnid31`, Vietnam, 2026.*

@@ -97,7 +97,7 @@ Vì lab này:
 | R2 | `[VN-SOC R2] LSASS Memory Access` | T1003.001 | [R2](R2-T1003.001-lsass-access.md) | ✅ | ⏳ Pha 4 | 0 (chưa test) |
 | R3 | `[VN-SOC R3] Registry Run Key Modification` | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ✅ | ✅ 2026-06-25 | 4 |
 | R4 | `[VN-SOC R4] Multiple Failed Logon — Brute Force` | T1110 | [R4](R4-T1110-brute-force-login.md) | ✅ | ✅ 2026-06-25 (sau fix config) | 1 |
-| R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | [R5](R5-T1071.001-non-browser-outbound.md) | ✅ | ✅ 2026-06-25 (có FP) | 30 |
+| R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | [R5](R5-T1071.001-non-browser-outbound.md) | ✅ | ✅ 2026-06-25 + tuned (FP -100%) | 55 → 0 sau tune |
 
 ## Pitfalls / Lessons learned trong Pha 3
 
