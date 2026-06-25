@@ -320,12 +320,34 @@ UFW status:
 |---|---|
 | Pipeline Logstash sẵn sàng ở `:5044` | ✅ |
 | Prompt cho Antigravity setup endpoint | ✅ chuẩn bị xong (xem `roadmap.md` §A.1) |
-| Sysmon installed trên Win10 | ⏳ |
-| Winlogbeat installed trên Win10 | ⏳ |
-| Event đầu tiên xuất hiện trong ES | ⏳ chờ |
-| Index `winlogbeat-*` được tạo | ⏳ chờ |
+| Sysmon installed trên Win10 | ✅ Hoàn tất |
+| Winlogbeat installed trên Win10 | ✅ Hoàn tất |
+| Event đầu tiên xuất hiện trong ES | ✅ Hoàn tất (Logstash acked > 2000 events) |
+| Index `winlogbeat-*` được tạo | ✅ Hoàn tất |
 
-*(Phần này sẽ cập nhật ngay sau khi Antigravity chạy xong setup trên Win10.)*
+### 5.3 Chi tiết triển khai Endpoint
+
+1. **Cài đặt Sysmon**:
+   - Tải từ Sysinternals và giải nén vào [C:\Sysmon](file:///C:/Sysmon).
+   - Sử dụng file cấu hình SwiftOnSecurity: `sysmonconfig-export.xml`.
+   - Lệnh cài đặt: `Sysmon64.exe -accepteula -i sysmonconfig-export.xml` (chạy dưới quyền Administrator).
+   - Kiểm tra dịch vụ `Sysmon64` hoạt động bình thường, startup mode `Automatic`.
+
+2. **Cài đặt Winlogbeat**:
+   - Tải phiên bản Winlogbeat 8.19.0.
+   - Giải nén vào thư mục `C:\Program Files\Winlogbeat`.
+   - Cấu hình [winlogbeat.yml](file:///C:/Program%20Files/Winlogbeat/winlogbeat.yml) để chuyển tiếp log về cổng Logstash `43.228.215.234:5044`.
+   - Chạy kiểm tra cấu hình thành công:
+     ```cmd
+     .\winlogbeat.exe test config -e
+     .\winlogbeat.exe test output -e
+     ```
+   - Đăng ký và khởi động dịch vụ Winlogbeat thành công.
+
+3. **Kiểm tra hoạt động**:
+   - File log [winlogbeat-20260625.ndjson](file:///C:/ProgramData/winlogbeat/Logs/winlogbeat-20260625.ndjson) ghi nhận:
+     `"Connection to backoff(async(tcp://43.228.215.234:5044)) established"`
+   - Ghi nhận metrics gửi đi thành công với số lượng sự kiện log đã ack đạt trên 2000.
 
 ---
 

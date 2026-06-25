@@ -9,7 +9,7 @@
 | Pha | Tên | Tuần | Trạng thái |
 |---|---|---|---|
 | 1 | SIEM Backend Deployment | T1 D1–D3 | ✅ Hoàn tất (xem report) |
-| 2 | Endpoint Telemetry | T1 D4–D5 | 🔄 Đang làm |
+| 2 | Endpoint Telemetry | T1 D4–D5 | ✅ Hoàn tất (xem report) |
 | 3 | Detection Engineering | T1 D6–T2 D2 | ⏳ Pending |
 | 4 | Adversary Emulation | T2 D3–D4 | ⏳ Pending |
 | 5 | Incident Response & Documentation | T2 D5–D7 | ⏳ Pending |
