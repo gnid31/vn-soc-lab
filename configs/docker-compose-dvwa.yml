@@ -1,0 +1,13 @@
+# Docker Compose cho DVWA target trên SOC-Tools VM
+# Path: ~/soc-tools/dvwa/docker-compose.yml
+# Apache logs mount ra host để Filebeat read được
+
+services:
+  dvwa:
+    image: vulnerables/web-dvwa
+    container_name: vnsoc-dvwa
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    volumes:
+      - ./apache-logs:/var/log/apache2

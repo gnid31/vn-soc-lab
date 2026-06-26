@@ -359,7 +359,7 @@ ssh -L 8080:localhost:8080 \
 
 | Pha | Tên | Build trên | Hardware change | RAM checkpoint VPS | Time |
 |---|---|---|---|---|---|
-| **6** | Network IDS + Web target | SOC-Tools VM mới | +1 VM local (3GB/20GB) | No change | 2-3 ngày |
+| **6** | Network IDS + Web target | SOC-Tools VM mới | +1 VM local (3GB/20GB) | No change | ✅ 2026-06-26 (xem pha6-results.md) |
 | **7** | HIDS — Wazuh full stack | SOC-Wazuh VM mới + Win10 Agent | +1 VM local (4GB/20GB), shrink Win10 60→50 | +0.2 GB (Filebeat ship) | 3-4 ngày |
 | **8** | AI/ML detection | Flask ML API Docker trên VPS | No local change | **+0.5 GB → check before deploy** | 4-5 ngày |
 | **9** | SOAR & Case mgmt | TheHive Docker SOC-Tools + n8n Docker VPS | No local change | **+0.5 GB → có thể phải stop Node.js apps** | 3-4 ngày |

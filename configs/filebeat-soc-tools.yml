@@ -1,0 +1,38 @@
+# /etc/filebeat/filebeat.yml — VN-SOC Lab SOC-Tools VM
+# Ships Suricata eve.json + DVWA Apache access.log → VPS Logstash:5044
+
+filebeat.inputs:
+  - type: filestream
+    id: suricata-eve
+    enabled: true
+    paths:
+      - /var/log/suricata/eve.json
+    fields:
+      source_type: suricata
+    fields_under_root: false
+    parsers:
+      - ndjson:
+          target: ""
+          add_error_key: true
+
+  - type: filestream
+    id: dvwa-apache-access
+    enabled: true
+    paths:
+      - /home/gnid/soc-tools/dvwa/apache-logs/access.log
+    fields:
+      source_type: dvwa-apache
+
+output.logstash:
+  hosts: ["43.228.215.234:5044"]
+
+tags: ["vn-soc-lab", "soc-tools", "<SOC_TOOLS_IP>"]
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+
+monitoring.enabled: false
