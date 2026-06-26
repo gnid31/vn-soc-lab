@@ -45,4 +45,5 @@
 [2026-06-25 24:30] [actor=claude] [phase=5] viết Incident Report VN-SOC-2026-0001 — NIST 800-61 format, full kill-chain mapping 3 MITRE tactics + 4 techniques, 5 detailed event blocks với raw Sysmon evidence + analyst notes + pivot KQL, IoC extraction, containment timeline, root cause + recommendations, appendix KQL queries
 [2026-06-25 24:35] [actor=claude] [phase=5] scaffold template-incident-report.md (NIST 800-61 blank template cho future incidents) + incidents/README.md (workflow + naming convention)
 [2026-06-25 24:40] [actor=claude] [phase=5] update report.md §8 Skills matrix thêm 7 rows (Detection engineering, Adversary emulation, Sysmon tuning, IR writeup, MITRE mapping, Log pivot, FP tuning); roadmap Pha 5 ✅ done; README current-status section đổi 5 pha tất cả ✅
+[2026-06-26 01:00] [actor=claude] [phase=6-9-plan] lock architecture Pha 6→9 vào roadmap §F' — multi-stack distributed: local 2 SOC VM (Wazuh full stack + Tools), VPS thêm ML API + n8n. Network NAT vmnet8 cho lab, SSH tunnel host access. Multi-SIEM Elastic+Wazuh parallel cho vendor diversification angle. RAM checkpoint policy trước Pha 8/9 — user quyết stop Node.js apps khi cần
 

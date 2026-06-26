@@ -298,6 +298,98 @@ Không thuộc scope 2 tuần, nhưng có thể bổ sung sau:
 
 ---
 
+## F'. Phase 6→9 — Architecture locked (2026-06-26)
+
+### F'.1 Tier mapping — multi-stack distributed
+
+```
+LOCAL VMware (16 GB RAM, 120 GB disk — NAT segment vmnet8):
+  Kali (existing)          3 GB / 25 GB   Attacker
+  Win10 (existing, shrink) 4 GB / 50 GB   + Sysmon + Winlogbeat + Wazuh Agent
+  SOC-Wazuh VM (Pha 7)     4 GB / 20 GB   Wazuh full stack (Manager + Indexer + Dashboard)
+  SOC-Tools VM (Pha 6)     3 GB / 20 GB   Suricata + DVWA + TheHive + Cortex
+
+  Total local: 14 GB / 115 GB → buffer 2 GB RAM + 5 GB disk
+
+VPS 43.228.215.234 (Elastic primary SIEM, không sửa baseline):
+  ELK stack (existing)     ~3.5 GB        Elasticsearch + Kibana + Logstash multi-pipeline
+  Other Node.js apps       ~1.7 GB        Giữ — monitor RAM, stop tại Pha 8/9 nếu thiếu
+  Pha 8 add: Flask ML API  +0.5 GB        Docker, Logstash filter call API enrich ML score
+  Pha 9 add: n8n SOAR      +0.5 GB        Docker, webhook từ Kibana detection alerts
+
+  Projected used: ~6.2 GB / 7.8 GB → buffer ~1.6 GB (tight, monitor)
+```
+
+### F'.2 Network design — NAT segment
+
+Tất cả VM lab cùng VMware NAT vmnet8 (mặc định 192.168.x.0/24).
+
+Suricata visibility:
+- ✅ Kali → DVWA (trên SOC-Tools VM) — traffic vào eth0 của VM
+- ✅ Win10 → DVWA — cùng lý do
+- ❌ Win10 → Internet bound — không qua SOC-Tools
+- ⚠️ Kali ↔ Win10 lateral — không thấy trực tiếp (cần tap/mirror nâng cao)
+
+→ Đủ cover Pha 6 trọng tâm "web attack against DVWA".
+
+Host access UI services trên SOC VMs: dùng **SSH tunnel** thay vì VMware NAT port forwarding (cleaner, không touch system config).
+
+```bash
+# Ví dụ truy cập DVWA + TheHive + Wazuh Dashboard từ host
+ssh -L 8080:localhost:8080 \
+    -L 9000:localhost:9000 \
+    -L 4443:localhost:443 \
+    user@<SOC-Tools-IP>
+# rồi browser http://localhost:8080, http://localhost:9000, https://localhost:4443
+```
+
+### F'.3 Tại sao mỗi component đặt ở đâu
+
+| Component | Nơi đặt | Lý do |
+|---|---|---|
+| Wazuh full stack | Local SOC-Wazuh VM | Tự-chứa, snapshot dễ, tier-separated khỏi Elastic primary |
+| Suricata | Local SOC-Tools VM | Monitor LAN traffic (Kali↔Win10↔DVWA) |
+| DVWA | Local SOC-Tools VM | Target trong NAT local, không expose Internet |
+| TheHive + Cortex | Local SOC-Tools VM | Case data sensitive, analyst access |
+| n8n | **VPS** | SOAR webhooks dễ trigger từ Kibana (cùng host = no firewall hop) |
+| ML Flask API | **VPS** | Logstash filter gọi mỗi event → cùng host = sub-ms latency |
+| Wazuh Agent | Win10 | Endpoint |
+
+### F'.4 Pha 6→9 breakdown
+
+| Pha | Tên | Build trên | Hardware change | RAM checkpoint VPS | Time |
+|---|---|---|---|---|---|
+| **6** | Network IDS + Web target | SOC-Tools VM mới | +1 VM local (3GB/20GB) | No change | 2-3 ngày |
+| **7** | HIDS — Wazuh full stack | SOC-Wazuh VM mới + Win10 Agent | +1 VM local (4GB/20GB), shrink Win10 60→50 | +0.2 GB (Filebeat ship) | 3-4 ngày |
+| **8** | AI/ML detection | Flask ML API Docker trên VPS | No local change | **+0.5 GB → check before deploy** | 4-5 ngày |
+| **9** | SOAR & Case mgmt | TheHive Docker SOC-Tools + n8n Docker VPS | No local change | **+0.5 GB → có thể phải stop Node.js apps** | 3-4 ngày |
+
+Total: 12-16 ngày focused work.
+
+### F'.5 RAM checkpoint policy
+
+Tại đầu Pha 8 và Pha 9, **bắt buộc** check VPS RAM trước khi deploy:
+
+```bash
+ssh vps 'free -h | awk "/^Mem:/ {print \"Available: \" \$7}"'
+```
+
+- Available ≥ (RAM cần + 500 MB buffer) → proceed cài.
+- Available < buffer threshold → cảnh báo user, list các process Node.js consuming RAM, **user quyết định** stop process nào (mình không tự stop vì không biết app nào của user).
+
+### F'.6 Multi-SIEM rationale cho CV interview
+
+Lab này dùng **2 SIEM stack parallel** thay vì all-in-one — đây là pattern enterprise thật sự:
+
+| SIEM | Strength | Trong lab |
+|---|---|---|
+| Elastic (VPS) | Flexible KQL, custom rules, multi-source (network, endpoint, web) | Primary SIEM — Pha 1-5 |
+| Wazuh (SOC-Wazuh) | HIDS-focused, FIM out-of-box, compliance modules (PCI, HIPAA, NIST) | Secondary SIEM — Pha 7 |
+
+Talking point interview: *"I built dual-stack SIEM with vendor diversification — Elastic for flexibility and Wazuh for HIDS specialization. Both feed into TheHive SOAR for unified case management. This mirrors mature enterprise SOCs where Elastic Security + Splunk + Wazuh frequently coexist."*
+
+---
+
 ## G. Hardening backlog (đề xuất production)
 
 | # | Hardening | Cách làm |
