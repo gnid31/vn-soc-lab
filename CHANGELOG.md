@@ -64,3 +64,7 @@
 
 
 
+[2026-06-27 04:30] [actor=claude] [phase=7] deploy Wazuh full stack (Manager + Indexer + Dashboard) trên SOC-Wazuh VM 192.168.154.163, multi-SIEM coexistence với Elastic VPS. 5 lessons (RAM 4GB min, disk 50GB, MSI auto-enroll race)
+[2026-06-27 05:40] [actor=claude] [phase=8] deploy ML detection pipeline — Flask URL classifier Docker trên VPS :5000, Logstash http filter enrich dvwa-apache events. R9 fired 9 alerts 100% TP. 5 lessons (NumPy x86-v2, sklearn pickle compat, dataset synthetic over-optimism)
+[2026-06-27 06:30] [actor=claude] [phase=9] deploy SOAR — TheHive 5 stack SOC-Tools + n8n VPS + autossh reverse tunnel + systemd timer alert bridge. 34 cases auto-created cuối smoke-test. 7 lessons (n8n auth dep, TheHive 5 args, Kibana Basic license, SSH GatewayPorts + Docker host network)
+[2026-06-27 06:45] [actor=claude] [phase=9] cập nhật report.md cho đủ 9 pha — thêm §6 Pha 3-9 summary (lessons aggregate + MITRE coverage 9 techniques), renumber §7-12 (Sự cố/Hardening/Kỹ năng/Phụ lục/File Inventory/Troubleshooting), expand File Inventory với SOC-Tools + SOC-Wazuh VMs + ml-detection + soar

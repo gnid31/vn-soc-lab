@@ -12,10 +12,12 @@
 | Tên dự án | VN-SOC Lab |
 | Tác giả | `gnid31` |
 | Bắt đầu | 2026-06-23 |
-| Cập nhật cuối | 2026-06-25 |
-| Trạng thái | ✅ Pha 1 & 2 hoàn tất — Pha 3 đang khởi động |
+| Cập nhật cuối | 2026-06-27 |
+| Trạng thái | ✅ **9/9 phases hoàn tất** — lab end-to-end CV-ready |
 | Repo | github.com/gnid31/vn-soc-lab (private) |
-| Stack chính | Elasticsearch 8.19.17, Kibana 8.19.17, Logstash 8.19.17, Sysmon v15, Winlogbeat 8.19.0 |
+| Stack chính | Elastic 8.19.17 (ES + Kibana + Logstash), Sysmon v15, Winlogbeat 8.19.0, Filebeat 8.19.17, Suricata 8.0.5, Wazuh 4.9.2 full stack, scikit-learn 1.5.2 (Flask), n8n 1.74.1, TheHive 5.4.0 (Cassandra 4 + ES 7) |
+| VMs | VPS (Elastic + ML + n8n + SOAR bridge), SOC-Tools (Suricata + DVWA + TheHive), SOC-Wazuh (Wazuh stack), Win10 (Sysmon + Winlogbeat + Wazuh Agent), Kali (attacker + analyst) |
+| Detection rules | 9 (R1-R9) cover 9 MITRE techniques: T1003.001, T1059.001, T1071.001, T1083, T1110, T1190, T1547.001, T1595, T1595.002 |
 
 > ⚠️ **Quy ước viết báo cáo này:** `report.md` CHỈ ghi lại những phần đã thực thi và verify thành công (nguyên tắc *deploy-then-document*). Kế hoạch các pha sắp tới nằm trong [`roadmap.md`](roadmap.md). Mỗi commit sửa file này đi kèm 1 dòng trong [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -29,12 +31,13 @@
 3. [Kiến trúc hệ thống](#3-kiến-trúc-hệ-thống)
 4. [Pha 1 — SIEM Backend (hoàn tất)](#4-pha-1--siem-backend-hoàn-tất)
 5. [Pha 2 — Endpoint Telemetry (hoàn tất)](#5-pha-2--endpoint-telemetry-hoàn-tất)
-6. [Sự cố & xử lý đã ghi nhận](#6-sự-cố--xử-lý-đã-ghi-nhận)
-7. [Hardening đã áp dụng vs còn thiếu](#7-hardening-đã-áp-dụng-vs-còn-thiếu)
-8. [Kỹ năng đã chứng minh tới hiện tại](#8-kỹ-năng-đã-chứng-minh-tới-hiện-tại)
-9. [Phụ lục — lệnh tham khảo](#9-phụ-lục--lệnh-tham-khảo)
-10. [File Inventory — toàn bộ file đã sửa/tạo](#10-file-inventory)
-11. [Troubleshooting flow](#11-troubleshooting-flow)
+6. [Pha 3-9 — Tổng quan các pha mở rộng](#6-pha-3-9--tổng-quan-các-pha-mở-rộng)
+7. [Sự cố & xử lý đã ghi nhận](#7-sự-cố--xử-lý-đã-ghi-nhận)
+8. [Hardening đã áp dụng vs còn thiếu](#8-hardening-đã-áp-dụng-vs-còn-thiếu)
+9. [Kỹ năng đã chứng minh tới hiện tại](#9-kỹ-năng-đã-chứng-minh-tới-hiện-tại)
+10. [Phụ lục — lệnh tham khảo](#10-phụ-lục--lệnh-tham-khảo)
+11. [File Inventory — toàn bộ file đã sửa/tạo](#11-file-inventory)
+12. [Troubleshooting flow](#12-troubleshooting-flow)
 
 ---
 
@@ -137,35 +140,57 @@ gh auth login    # cùng flow như Kali
 
 ## 1. Tóm tắt điều hành
 
-**Đến thời điểm cập nhật cuối**, dự án đã hoàn tất **Pha 1** (SIEM backend trên VPS Cloud) và **Pha 2** (telemetry endpoint Windows 10) — endpoint `DESKTOP-L7FCMBQ` đã ship hơn 4400 event vào index `winlogbeat-2026.06.25` qua Logstash, trong đó **2675 event** là Sysmon raw (process creation, registry, file, DNS, network connection). Sẵn sàng chuyển sang **Pha 3** (Detection Engineering — viết detection rule trong Kibana mapping MITRE ATT&CK).
+**Đến thời điểm cập nhật cuối (2026-06-27)**, dự án đã hoàn tất **9/9 pha** — lab CV-ready, mô phỏng đầy đủ vòng đời SOC từ collection → detection → response → automation:
 
-Stack đang chạy:
+| Pha | Tên | Trạng thái | Deliverable chính |
+|---|---|---|---|
+| 1 | SIEM Backend | ✅ | Elastic 8.19 (ES + Kibana + Logstash) trên VPS 43.228.215.234 |
+| 2 | Endpoint Telemetry | ✅ | Sysmon + Winlogbeat trên Win10 → 4400+ event/day |
+| 3 | Detection Engineering (R1-R5) | ✅ | 5 KQL rule MITRE-mapped (T1003/T1059/T1110/T1547/T1071) |
+| 4 | Adversary Emulation | ✅ | Atomic Red Team chain T1547→T1059→T1110, 5 lessons + R5 FP tune |
+| 5 | Incident Response | ✅ | VN-SOC-2026-0001 kill-chain doc NIST 800-61 format |
+| 6 | Network IDS Layer (R6-R8) | ✅ | Suricata 8.0.5 + DVWA + 3 rule (T1595/T1595.002/T1083) |
+| 7 | Wazuh HIDS Full Stack | ✅ | Multi-SIEM: Wazuh Manager + Indexer + Dashboard + Win10 Agent |
+| 8 | ML Detection (R9) | ✅ | TF-IDF + LogReg URL classifier, Flask Docker, Logstash enrichment |
+| 9 | SOAR & Case Management | ✅ | TheHive 5 + n8n + alert bridge → 34 cases auto |
+
+**Stack đang chạy:**
 
 ```
-┌──────────────────────────┐    TCP 5044    ┌──────────────────────┐
-│ Windows 10 victim        │ ─────────────→ │  Logstash 8.19.17    │
-│ DESKTOP-L7FCMBQ          │                │  pipeline winlogbeat │
-│ Sysmon v15 + Winlogbeat  │                └─────────┬────────────┘
-│   (Pha 2 — done)         │                          │ HTTPS 9200
-└──────────────────────────┘                          ▼
-                                          ┌────────────────────────┐
-                                          │  Elasticsearch 8.19.17 │
-                                          │  + Kibana 8.19.17      │
-                                          │  Encryption keys: ✅    │
-                                          │  (Pha 1 — done)        │
-                                          └────────────────────────┘
-                                            VPS 43.228.215.234
+                 KALI (attacker + analyst host)
+                       │  curl DVWA / Atomic Red Team
+                       │  autossh reverse tunnels VPS↔SOC-Tools
+                       │  SSH local forwards cho Kibana / n8n / TheHive UI
+                       │
+       LOCAL VMware NAT vmnet8 (192.168.154.0/24):
+         Win10 victim   192.168.154.164  Sysmon + Winlogbeat + Wazuh Agent
+         SOC-Tools VM   192.168.154.165  Suricata + DVWA + TheHive stack
+         SOC-Wazuh VM   192.168.154.163  Wazuh Manager + Indexer + Dashboard
+
+                       │ ship logs (Beats / Wazuh proto / agent enrollment)
+                       ▼
+
+       VPS 43.228.215.234 — central SIEM + SOAR plane:
+         Elastic 8.19   ES :9200 / Kibana :5601 / Logstash :5044
+           indices: winlogbeat-* | suricata-* | dvwa-apache-*
+         ML Detection   Flask URL classifier Docker :5000 loopback
+         SOAR           n8n :5678 (host network) + systemd timer poll ES → n8n
+                        → SSH reverse tunnel → TheHive :9000 case auto
 ```
 
-**Truy cập:**
+**Truy cập (cuối Pha 9):**
 
 | Endpoint | URL/Port | Trạng thái |
 |---|---|---|
-| Kibana UI | http://43.228.215.234:5601 | ✅ HTTP 200 từ external |
-| Elasticsearch HTTPS | https://localhost:9200 (trên VPS) | ✅ green |
-| Logstash Beats input | 43.228.215.234:5044 | ✅ Listening |
-| Index `winlogbeat-2026.06.25` | _cat/indices | ✅ 4417 docs, 5.5 MB |
-| Logstash events counter | http://localhost:9600/_node/stats | ✅ in=filtered=out (no drop) |
+| Kibana UI | http://43.228.215.234:5601 | ✅ HTTP 200 external |
+| Wazuh Dashboard | https://192.168.154.163 | ✅ admin login + 2 agents active |
+| TheHive 5 UI | http://192.168.154.165:9000 (via SSH tunnel) | ✅ 34 cases auto-created |
+| n8n workflow editor | http://127.0.0.1:5678 (via SSH local forward) | ✅ workflow Active |
+| Flask ML API | http://127.0.0.1:5000 (loopback VPS) | ✅ /health + /predict |
+| ES indices | winlogbeat-* / suricata-* / dvwa-apache-* | ✅ multi-source ingest |
+| Detection rules | 9 enabled (R1-R9) | ✅ verified Pha 3-8 |
+
+---
 
 ---
 
@@ -487,7 +512,7 @@ sudo bash -c '
 
 ### 4.7 Kibana keystore — encryption keys cho Detection Engine ⚠️
 
-**BƯỚC NÀY THƯỜNG BỊ BỎ SÓT** trong tutorial Kibana 8.x. Bỏ qua sẽ dẫn tới lỗi **"Detection engine permissions required"** (sai message — thật ra do thiếu encryption keys, không phải permission — xem [§6.7](#67-kibana-detection-engine-báo-permissions-required-thực-ra-thiếu-encryption-keys)).
+**BƯỚC NÀY THƯỜNG BỊ BỎ SÓT** trong tutorial Kibana 8.x. Bỏ qua sẽ dẫn tới lỗi **"Detection engine permissions required"** (sai message — thật ra do thiếu encryption keys, không phải permission — xem [§7.7](#77-kibana-detection-engine-báo-permissions-required-thực-ra-thiếu-encryption-keys)).
 
 Detection Engine, Alerts, Actions, Fleet đều cần **3 encryption key** để encrypt API tokens / rule secrets / saved objects:
 
@@ -1061,22 +1086,139 @@ event.action: "Process Create (rule: ProcessCreate)"
 
 ---
 
-## 6. Sự cố & xử lý đã ghi nhận
+## 6. Pha 3-9 — Tổng quan các pha mở rộng
+
+> Mỗi pha có file `pha{N}-results.md` riêng — chi tiết stage-by-stage, lessons learned, smoke-test output. Section này tổng hợp executive view + key takeaways cho recruiter.
+
+### 6.1 Pha 3 — Detection Engineering (R1-R5) — `pha3-results` trong [`detection-rules/`](detection-rules/)
+
+| Rule | MITRE | Spec | Smoke-test |
+|---|---|---|---|
+| R1 PowerShell Encoded Command | T1059.001 | [link](detection-rules/R1-T1059.001-powershell-encoded.md) | 5+1 alerts |
+| R2 LSASS Memory Access | T1003.001 | [link](detection-rules/R2-T1003.001-lsass-access.md) | 1 alert (Defender FP) |
+| R3 Registry Run Key | T1547.001 | [link](detection-rules/R3-T1547.001-registry-run-key.md) | 4 alerts |
+| R4 Brute Force Logon | T1110 | [link](detection-rules/R4-T1110-brute-force-login.md) | 1 alert (sau fix threshold) |
+| R5 Non-Browser Outbound HTTP/HTTPS | T1071.001 | [link](detection-rules/R5-T1071.001-non-browser-outbound.md) | 55 → 0 sau tune |
+
+8 lesson về KQL pitfalls — xem [`detection-rules/README.md §Pitfalls`](detection-rules/README.md).
+
+### 6.2 Pha 4 — Adversary Emulation — [`pha4-results.md`](pha4-results.md)
+
+Atomic Red Team chain: **T1547.001 → T1059.001 → T1110** trong 18 phút.
+- Tools: invoke-atomicredteam, Sysmon, kill-chain narrative.
+- 5 lessons mới: time-window verify trap, Sysmon ProcessAccess rule, Defender behavior killing chain, FP tuning R5 (-100% noise), reproducibility sweep.
+
+### 6.3 Pha 5 — Incident Response — [`incidents/VN-SOC-2026-0001-killchain.md`](incidents/VN-SOC-2026-0001-killchain.md)
+
+NIST 800-61 incident report:
+- Investigator narrative dạng story (không phải log dump).
+- ProcessGuid pivot cho parent-child chain.
+- IoC extracted (hash, regkey, IP).
+- MITRE kill-chain mapped 3 tactics.
+
+### 6.4 Pha 6 — Network Detection Layer (R6-R8) — [`pha6-results.md`](pha6-results.md)
+
++1 SOC-Tools VM (Ubuntu 22.04, 3 GB→4 GB tại Pha 9, 23 GB disk).
+- Suricata 8.0.5 native trên `ens33` + ET Open ruleset.
+- DVWA Docker (port 8080) + Filebeat 2 input multi-source.
+- Logstash main.conf refactor: 3-branch routing (winlogbeat/suricata/dvwa-apache).
+- 8 lessons: LVM extend, pipe broken `curl|sudo`, ECS v8 grok rename, KQL `.keyword` pitfalls 5 bugs.
+
+### 6.5 Pha 7 — Wazuh HIDS Full Stack — [`pha7-results.md`](pha7-results.md)
+
++1 SOC-Wazuh VM (Ubuntu 22.04, 4 GB RAM, 50 GB disk).
+- Wazuh 4.9.2 Manager + Indexer + Dashboard (clone wazuh-docker single-node, heap tune `-Xms1g`).
+- Win10 Wazuh Agent MSI install → 2 agents active.
+- Multi-SIEM coexistence: Elastic (primary) + Wazuh (HIDS-focused). Win10 dual-ship Winlogbeat→Elastic + Wazuh Agent→Manager.
+- 5 lessons: RAM minimum 4 GB (không 2), non-LVM resize đơn giản, disk 14 GB Wazuh baseline, MSI auto-enrollment race → duplicate name, Python f-string quirk.
+
+### 6.6 Pha 8 — AI/ML Detection (R9) — [`pha8-results.md`](pha8-results.md)
+
+ML enrichment inline trên Logstash dvwa-apache branch.
+- Dataset: 459 URL synthesize (sqli/xss/lfi/probe vs benign).
+- Model: TF-IDF `char_wb` (2,5) + LogisticRegression class_weight=balanced.
+- Serving: Flask + gunicorn Docker multi-stage (Python 3.12-slim), mem_limit 400 MB.
+- Logstash filter-http call `127.0.0.1:5000/predict` → gắn `[ml]` object vào event.
+- **R9 fired 9 alerts 100% TP** (sqli/lfi/xss/.env/.git/wp-config) tại threshold 0.7.
+- 5 lessons: NumPy x86-64-v2 baseline (QEMU CPU không support), Python 3.13 wheel availability, pickle compat across sklearn version, synthetic dataset over-optimism, Logstash interpolation `%{}` syntax.
+
+### 6.7 Pha 9 — SOAR & Case Management — [`pha9-results.md`](pha9-results.md)
+
+Auto-pipeline: detection alert → ES → bridge → n8n → TheHive case.
+- TheHive 5.4 stack (Cassandra 4 + ES 7) trên SOC-Tools (sau RAM upgrade 2→4 GB).
+- n8n 1.74.1 `network_mode: host` trên VPS.
+- SSH reverse tunnel `autossh -R 0.0.0.0:9000:SOC-Tools:9000` (cross-network bridge VPS↔SOC-Tools).
+- systemd timer (30s) poll ES alerts → POST n8n webhook (workaround vì Kibana Basic license không có `.webhook` connector).
+- Smoke-test: **34 cases tổng cộng** (3 manual + 31 auto-forwarded từ R6/R7/R8/R9).
+- 7 lessons: n8n auth env deprecation, TheHive 5 args khác v4, perms cần org-admin/analyst, SSH GatewayPorts + Docker `network_mode: host`, n8n HTTP node default GET, Kibana license tier, f-string quirk repeat.
+
+### 6.8 Toàn cảnh — Detection rules R1-R9 cover 9 MITRE techniques
+
+| Tactic (TA) | Technique | Rule | Source |
+|---|---|---|---|
+| Reconnaissance (TA0043) | T1595 Active Scanning | R6 | Suricata |
+| Reconnaissance (TA0043) | T1595.002 Vulnerability Scanning UA | R7 | DVWA Apache log |
+| Initial Access (TA0001) | T1190 Exploit Public-Facing Application | R9 | DVWA + ML score |
+| Execution (TA0002) | T1059.001 PowerShell | R1 | Sysmon |
+| Persistence (TA0003) | T1547.001 Registry Run Key | R3 | Sysmon |
+| Credential Access (TA0006) | T1003.001 LSASS Memory Access | R2 | Sysmon |
+| Credential Access (TA0006) | T1110 Brute Force | R4 | Security event 4625 |
+| Discovery (TA0007) | T1083 File and Directory Discovery | R8 | DVWA Apache log |
+| Command & Control (TA0011) | T1071.001 Web Protocols | R5 | Sysmon network |
+
+### 6.9 Lessons learned aggregate (Pha 3-9)
+
+Tổng cộng **~40 lessons learned** trong các pha mở rộng — gold cho phỏng vấn. Highlights:
+
+| # | Lesson | Pha | Take-away |
+|---|---|---|---|
+| L1 | KQL `.keyword` cho aggregation; quote = literal; `/*` Lucene comment | 3 / 6 | Always test KQL trên Discover trước khi gắn rule. |
+| L2 | Atomic Red Team time-window trap — alert có thể ngoài window do shipping delay | 4 | Mở rộng range hoặc query no-time-filter. |
+| L3 | Sysmon config XML must include ProcessAccess RuleGroup cho R2 fire | 4 | Validate config bằng `Sysmon64 -c file.xml`. |
+| L4 | False-positive tuning > rule deletion — R5 exclude Antigravity `agy.exe` | 4 | Doc whitelist + maintain in rule code. |
+| L5 | Logstash ECS v8 auto-rename grok fields (clientip→source.address) | 6 | Check `dvwa-apache-*` mapping sau pipeline change. |
+| L6 | Wazuh RAM minimum thực tế 4 GB cho full stack | 7 | Docs "minimal 2 GB" chỉ đúng cho Manager-only. |
+| L7 | MSI race condition → duplicate agent name → restart service force reload key | 7 | Always force `agent-auth.exe` + restart, không dựa auto-enrollment. |
+| L8 | NumPy 2.x wheel cần x86-64-v2; pin `numpy==1.26.4` cho QEMU CPU older | 8 | Verify VPS CPU flags trước khi pick stack. |
+| L9 | Synthetic dataset 1.0 AUC misleading — augment với real Apache log | 8 | Raise threshold tạm thời (0.5→0.7) trong khi retrain. |
+| L10 | Kibana Basic license không có `.webhook` connector → systemd timer workaround | 9 | Free-tier SOAR pattern cho lab/SME. |
+| L11 | SSH `-R` default bind 127.0.0.1 — cần GatewayPorts yes + bind `0.0.0.0` + container `network_mode: host` | 9 | 3 layer config phải đúng đồng thời. |
+| L12 | n8n HTTP Request typeVersion 4.2 default Method=GET — explicit set POST | 9 | TheHive trả 404 cho GET → misleading. |
+
+Toàn bộ lessons xem chi tiết trong file `pha{N}-results.md` tương ứng + `detection-rules/README.md`.
+
+### 6.10 File mới Pha 3-9 (high-level)
+
+```
+detection-rules/         R1-R9.md + R*.ndjson + README convention
+incidents/               VN-SOC-2026-0001-killchain.md (NIST 800-61)
+configs/                 main.conf (multi-branch Logstash) + filebeat-soc-tools.yml
+                         docker-compose-dvwa.yml + wazuh-docker-compose.yml
+ml-detection/api/        Dockerfile multi-stage + app.py + train/ scripts
+soar/n8n/                docker-compose.yml + workflow JSON
+soar/thehive/            docker-compose.yml (Cassandra 4 + ES 7 + TheHive 5)
+soar/bridge/             alert-forwarder.py + systemd service+timer
+pha3-results … pha9-results.md  (5 doc files, ~2500 lines total)
+```
+
+---
+
+## 7. Sự cố & xử lý đã ghi nhận
 
 Phần này quan trọng cho recruiter — chứng minh năng lực debug, không phải "copy lệnh từ tutorial".
 
-### 6.1 `debconf: unable to initialize frontend: Dialog/Readline` khi apt install qua SSH
+### 7.1 `debconf: unable to initialize frontend: Dialog/Readline` khi apt install qua SSH
 
 **Triệu chứng:** Lúc `apt install elasticsearch`, debconf bung warning frontend.
 **Nguyên nhân:** SSH không cấp pseudo-TTY → debconf fall back qua Teletype.
 **Xử lý:** Đặt `DEBIAN_FRONTEND=noninteractive` cho các install sau (Kibana, Logstash). Không phải lỗi.
 
-### 6.2 Auto-generated `elastic` password trôi qua scrollback
+### 7.2 Auto-generated `elastic` password trôi qua scrollback
 
 **Triệu chứng:** Output cài Elastic in password chỉ một lần lúc post-install, không kịp capture.
 **Xử lý:** Re-issue bằng tool chính thức: `elasticsearch-reset-password -u elastic -b -s`. Redirect vào file chmod 600. Đây là path chính thức của Elastic — không phải workaround.
 
-### 6.3 Logstash log INFO `Not eligible for data streams`
+### 7.3 Logstash log INFO `Not eligible for data streams`
 
 **Triệu chứng:** Sau restart, log Logstash xuất hiện:
 ```
@@ -1086,7 +1228,7 @@ that are not compatible with data streams: {"index"=>"winlogbeat-%{+YYYY.MM.dd}"
 **Nguyên nhân:** Chỉ định `index =>` rõ ràng → Logstash buộc dùng time-based index thay vì data stream.
 **Xử lý:** Đây là hành vi **mong muốn** — pattern `winlogbeat-*` đúng theo yêu cầu báo cáo. Không cần fix.
 
-### 6.4 Logstash WARN `ssl_verification_mode disabled`
+### 7.4 Logstash WARN `ssl_verification_mode disabled`
 
 **Triệu chứng:** Log Logstash:
 ```
@@ -1096,19 +1238,19 @@ to make sure your data is secure set `ssl_verification_mode => full`
 **Nguyên nhân:** Cert ES là self-signed; lab chấp nhận `ssl_verification_mode => none`.
 **Khuyến nghị production:** Mount `/etc/elasticsearch/certs/http_ca.crt` vào Logstash, đổi `ssl_verification_mode => full` + `ssl_certificate_authorities`. Chưa làm trong lab.
 
-### 6.5 ⚠️ UFW chặn 5601 nhưng `curl` trên server vẫn HTTP 200
+### 7.5 ⚠️ UFW chặn 5601 nhưng `curl` trên server vẫn HTTP 200
 
 **Triệu chứng:** Test `curl http://43.228.215.234:5601/api/status` trên chính VPS trả 200 mặc dù UFW chưa mở 5601.
 **Nguyên nhân:** Request loopback từ server tự gọi public IP của mình → traffic đi qua interface `lo`, **không** qua INPUT chain → UFW không thấy.
 **Bài học:** *Test bảo mật firewall phải test từ MÁY KHÁC.* Đã chạy lại từ Kali → ban đầu 5601 timeout. Sau `ufw allow 5601` mới phản hồi 200.
 **Ý nghĩa:** Chính xác là kiểu lỗi "tưởng đã pass test nhưng không". Lab dạy phải nghi ngờ chính kết quả test của mình.
 
-### 6.6 Pending kernel upgrade trên Ubuntu 24.04
+### 7.6 Pending kernel upgrade trên Ubuntu 24.04
 
 **Triệu chứng:** `needrestart` báo kernel running ≠ kernel installed (`6.8.0-54` vs `6.8.0-124`).
 **Quyết định:** **Không** reboot trong quá trình setup — rớt SSH + service. Tất cả service đã `enable`, sau reboot tự lên. Reboot là quyết định ops, không phải side-effect apt.
 
-### 6.7 Kibana báo "Detection Engine permissions required" — thực ra thiếu encryption keys
+### 7.7 Kibana báo "Detection Engine permissions required" — thực ra thiếu encryption keys
 
 **Triệu chứng:** Mở Kibana → Security → Rules → Detection rules, nhận:
 ```
@@ -1157,7 +1299,7 @@ sudo systemctl restart kibana
 
 ---
 
-## 7. Hardening đã áp dụng vs còn thiếu
+## 8. Hardening đã áp dụng vs còn thiếu
 
 | # | Hardening | Trạng thái | Cách làm trong production |
 |---|---|---|---|
@@ -1179,7 +1321,7 @@ Phần "còn thiếu" sẽ đề cập trong `roadmap.md §G` (mở rộng nếu
 
 ---
 
-## 8. Kỹ năng đã chứng minh tới hiện tại
+## 9. Kỹ năng đã chứng minh tới hiện tại
 
 | Domain | Kỹ năng | Bằng chứng |
 |---|---|---|
@@ -1189,7 +1331,7 @@ Phần "còn thiếu" sẽ đề cập trong `roadmap.md §G` (mở rộng nếu
 | Logstash DSL | input/filter/output, translate plugin, ECS v8 schema, conditional branch | `configs/winlogbeat.conf` + §4.9 |
 | Windows endpoint telemetry | Sysmon config XML, Winlogbeat channels, PowerShell logging event ID | §5 |
 | ECS schema | Phân biệt `winlog.event_data.*` raw vs `event.*` ECS-mapped | §5.6 sample doc |
-| Debugging | Đọc service log thay vì tin UI message (Kibana encryption keys issue) | §6.7 |
+| Debugging | Đọc service log thay vì tin UI message (Kibana encryption keys issue) | §7.7 |
 | Firewall testing | Hiểu loopback vs external interface trong UFW INPUT | §6.5 |
 | Documentation | Cấu trúc 3 file report/roadmap/changelog, deploy-then-document protocol | repo này + `AGENTS.md` |
 | Multi-agent collaboration | Claude Code (Kali) + Antigravity (Win10) cùng sửa 1 repo qua git | `AGENTS.md` §2 |
@@ -1202,12 +1344,23 @@ Phần "còn thiếu" sẽ đề cập trong `roadmap.md §G` (mở rộng nếu
 | MITRE ATT&CK kill-chain mapping | 3 tactics chained (Persistence T1547 / Execution T1059 / Credential Access T1110) trong 18 phút | `incidents/VN-SOC-2026-0001 §2` |
 | Log analysis pivot | ProcessGuid pivot, parent-child process tree, KQL multi-field correlation | `incidents/VN-SOC-2026-0001 §3 + §8.A` |
 | False-positive tuning | R5 exclude `agy.exe` (Antigravity) — FP reduced 100% | `pha4-results.md §Lesson 4` |
+| Network IDS deployment | Suricata 8.0.5 native interface monitor + ET Open ruleset 50k sigs | `pha6-results.md` |
+| Multi-source Logstash pipeline | 3-branch routing winlogbeat/suricata/dvwa-apache + grok COMBINEDAPACHELOG | `configs/main.conf` |
+| Docker production-like deployment | DVWA, Wazuh full stack, TheHive 5 stack, ml-url-api multi-stage, n8n host network | `configs/*.yml` + `soar/` + `ml-detection/` |
+| HIDS architecture | Wazuh Manager + Indexer (OpenSearch fork) + Dashboard, agent enrollment, multi-SIEM dual-ship | `pha7-results.md` |
+| OpenSearch tuning | Heap min/max, `vm.max_map_count`, cluster health on disk-constrained VM | `pha7-results.md §3.5` |
+| ML inline serving | TF-IDF char n-gram + LogReg, Flask + gunicorn Docker, Logstash filter-http enrichment | `pha8-results.md` + `ml-detection/api/` |
+| ML cross-version compat | Pin sklearn + numpy đồng nhất train + serve qua multi-stage Docker build | `pha8-results.md §Lessons 1-3` |
+| SOAR & case management | TheHive 5 stack + n8n workflow automation + ES alerts bridge → 34 cases auto | `pha9-results.md` + `soar/` |
+| Cross-network SSH tunneling | autossh reverse `-R 0.0.0.0:9000` + GatewayPorts + container `network_mode: host` | `pha9-results.md §3.5 + §3.6` |
+| Free-tier license workaround | systemd timer poll ES alerts → n8n webhook (Kibana Basic không có `.webhook`) | `soar/bridge/alert-forwarder.py` |
+| API-driven config | Kibana Detection Engine REST API tạo R9, TheHive REST API auth + org/user/key bootstrap | `pha8-results.md §3.8` + `pha9-results.md §3.4` |
 
 ---
 
-## 9. Phụ lục — lệnh tham khảo
+## 10. Phụ lục — lệnh tham khảo
 
-### 9.1 One-shot reproduce Pha 1 (script bash)
+### 10.1 One-shot reproduce Pha 1 (script bash)
 
 ```bash
 #!/usr/bin/env bash
@@ -1278,7 +1431,7 @@ echo "Kibana → http://$(hostname -I | awk '{print $1}'):5601"
 echo "Password ở ~/elastic-credentials.txt"
 ```
 
-### 9.2 Health-check vận hành
+### 10.2 Health-check vận hành
 
 ```bash
 # Service status
@@ -1314,7 +1467,7 @@ sudo tail -50 /var/log/kibana/kibana.log
 sudo tail -50 /var/log/logstash/logstash-plain.log
 ```
 
-### 9.3 Debug từ phía Windows endpoint
+### 10.3 Debug từ phía Windows endpoint
 
 ```powershell
 # Service status
@@ -1337,11 +1490,11 @@ Restart-Service winlogbeat
 
 ---
 
-## 10. File Inventory
+## 11. File Inventory
 
 Tất cả file đã sửa/tạo trong dự án — checklist khi reproduce.
 
-### 10.1 Trên VPS `43.228.215.234`
+### 11.1 Trên VPS `43.228.215.234`
 
 | Path | Loại | Vai trò |
 |---|---|---|
@@ -1352,14 +1505,53 @@ Tất cả file đã sửa/tạo trong dự án — checklist khi reproduce.
 | `/etc/elasticsearch/certs/` | auto-gen | Self-signed http.p12 + transport.p12 |
 | `/etc/kibana/kibana.yml` | sửa | Set `server.host: "0.0.0.0"` + enrollment auto-write `elasticsearch.hosts`, CA fingerprint |
 | `/etc/kibana/kibana.keystore` | sửa | 3 encryption keys (encrypted at rest) |
-| `/etc/logstash/conf.d/winlogbeat.conf` | tạo mới | Pipeline VN-SOC — bản local trong repo: [`configs/winlogbeat.conf`](configs/winlogbeat.conf) |
+| `/etc/logstash/conf.d/main.conf` | tạo mới (Pha 6 rename from winlogbeat.conf) | Pipeline VN-SOC multi-branch + ML enrichment Pha 8 — bản local: [`configs/main.conf`](configs/main.conf) |
 | `~/elastic-credentials.txt` | tạo mới | chmod 600 — password elastic user |
 | `/var/log/elasticsearch/elasticsearch.log` | auto-gen | Service log |
 | `/var/log/kibana/kibana.log` | auto-gen | Service log |
 | `/var/log/logstash/logstash-plain.log` | auto-gen | Service log |
 | UFW rules | sửa | `allow 22, 5044, 5601` |
+| `~/ml-detection/api/` (Pha 8) | tạo mới | Flask URL classifier Docker stack |
+| Container `ml-url-api` (Pha 8) | docker run | Loopback :5000, mem_limit 400 MB |
+| `~/soar/n8n/` (Pha 9) | tạo mới | n8n compose (host network) |
+| Container `n8n` (Pha 9) | docker run | n8n 1.74.1, :5678 loopback |
+| `/opt/vnsoc-soar/alert-forwarder.py` (Pha 9) | tạo mới | ES poll → n8n bridge |
+| `/etc/systemd/system/vnsoc-soar.service` + `.timer` (Pha 9) | tạo mới | Run every 30s |
+| `/etc/vnsoc-soar.env` (Pha 9) | tạo mới | chmod 640 — ES_PASS + N8N webhook |
+| `/var/lib/vnsoc-soar/state.json` (Pha 9) | runtime | Last-seen alert timestamp |
+| `/etc/ssh/sshd_config` (Pha 9) | sửa | `GatewayPorts yes` cho reverse tunnel cross-Docker |
 
-### 10.2 Trên Endpoint Win10 `DESKTOP-L7FCMBQ`
+### 11.2 Trên SOC-Tools VM `192.168.154.165` (Pha 6 + 9)
+
+| Path | Loại | Vai trò |
+|---|---|---|
+| Suricata 8.0.5 native | install | NIDS monitor `ens33` (Pha 6) |
+| ET Open ruleset | install | 50k+ signatures (Pha 6) |
+| `~/dvwa/docker-compose.yml` | tạo mới | DVWA target Pha 6 |
+| Container `vnsoc-dvwa` | docker run | DVWA :8080 |
+| `~/filebeat/filebeat.yml` | tạo mới | 2 input: suricata eve.json + apache access.log |
+| `/etc/sysctl.d/99-thehive.conf` (Pha 9) | tạo mới | `vm.max_map_count=262144` |
+| `~/soar/thehive/docker-compose.yml` (Pha 9) | tạo mới | Cassandra + ES 7 + TheHive 5 stack |
+| Container `thehive-cassandra` | docker run | Cassandra 4.1.4, heap 512m |
+| Container `thehive-elasticsearch` | docker run | ES 7.17.27, heap 512m |
+| Container `thehive` | docker run | TheHive 5.4.0 :9000 |
+| LVM extend operation | one-shot | `lvextend -l +100%FREE` (Pha 6) |
+| RAM upgrade 2→4 GB (Pha 9) | VMware Settings | Required cho TheHive stack |
+
+### 11.3 Trên SOC-Wazuh VM `192.168.154.163` (Pha 7)
+
+| Path | Loại | Vai trò |
+|---|---|---|
+| `/etc/sysctl.d/99-wazuh.conf` | tạo mới | `vm.max_map_count=262144` |
+| `~/soc-wazuh/wazuh-docker/single-node/` | git clone | Wazuh full stack template |
+| `~/soc-wazuh/wazuh-docker/single-node/docker-compose.yml` | sửa | Patched heap `-Xms1g -Xmx1g`, snapshot trong [`configs/wazuh-docker-compose.yml`](configs/wazuh-docker-compose.yml) |
+| `config/wazuh_indexer_ssl_certs/` | auto-gen | TLS certs (cá nhân) |
+| Container `single-node-wazuh.manager-1` | docker run | Wazuh Manager :1514 / :1515 / :55000 |
+| Container `single-node-wazuh.indexer-1` | docker run | OpenSearch :9200 |
+| Container `single-node-wazuh.dashboard-1` | docker run | Wazuh Dashboard :443 |
+| Disk expand 20→50 GB (Pha 7) | VMware Settings + `growpart` + `resize2fs` | Stack ăn 14 GB baseline |
+
+### 11.4 Trên Endpoint Win10 `DESKTOP-L7FCMBQ`
 
 | Path | Loại | Vai trò |
 |---|---|---|
@@ -1371,18 +1563,28 @@ Tất cả file đã sửa/tạo trong dự án — checklist khi reproduce.
 | `C:\ProgramData\winlogbeat\Logs\winlogbeat` | auto-gen | Winlogbeat service log |
 | Windows Service `Sysmon64` | install | Auto-start |
 | Windows Service `winlogbeat` | install | Auto-start |
+| `C:\Program Files (x86)\ossec-agent\` (Pha 7) | install | Wazuh Agent 4.9.2-1 MSI |
+| `C:\Program Files (x86)\ossec-agent\ossec.conf` (Pha 7) | sửa | `<address>192.168.154.163</address>` |
+| `C:\Program Files (x86)\ossec-agent\client.keys` (Pha 7) | auto-gen | Agent key sau enrollment |
+| Windows Service `WazuhSvc` (Pha 7) | install | Auto-start |
 
-### 10.3 Trên Workstation Kali
+### 11.5 Trên Workstation Kali
 
 | Path | Loại | Vai trò |
 |---|---|---|
 | `~/Documents/vn-soc-lab/` | git clone | Repo dự án |
 | `~/.secrets/credentials.md` | tạo mới | chmod 600 — copy local của Elastic/GitHub credentials |
 | `~/.config/git/ignore` | sửa | Global gitignore `.secrets/` |
-| `~/.claude/projects/-home-kali/memory/` | tạo mới | Memory Claude (user role, project context, references) |
-| `~/.claude/settings.json` | sửa | Theme, `tui: "default"` |
+| `~/.claude/projects/-home-kali/memory/` | tạo mới | Memory Claude (user role, project context, references, feedback) |
+| `~/.claude/settings.json` | sửa | Theme, `tui: "default"`, effortLevel |
+| `~/.ssh/id_ed25519_vps` + `~/.ssh/config` (Pha 8) | tạo mới | Passwordless SSH to VPS |
+| `autossh -R 0.0.0.0:9000:SOC-Tools:9000` (Pha 9) | runtime | Reverse tunnel TheHive bridge |
+| `autossh -L 127.0.0.1:5678:127.0.0.1:5678` (Pha 9) | runtime | Local forward cho n8n UI |
+| `~/Documents/vn-soc-lab/ml-detection/` | tạo mới | ML training scripts + Docker context (Pha 8) |
+| `~/Documents/vn-soc-lab/soar/` | tạo mới | n8n / TheHive / bridge configs (Pha 9) |
+| Package `autossh` | apt install | Persistent SSH tunnel daemon |
 
-### 10.4 Trên GitHub
+### 11.6 Trên GitHub
 
 | Path | Loại | Vai trò |
 |---|---|---|
@@ -1391,11 +1593,11 @@ Tất cả file đã sửa/tạo trong dự án — checklist khi reproduce.
 
 ---
 
-## 11. Troubleshooting flow
+## 12. Troubleshooting flow
 
 Khi gặp lỗi, follow flowchart theo thứ tự — KHÔNG nhảy bước.
 
-### 11.1 ES / Kibana / Logstash không start
+### 12.1 ES / Kibana / Logstash không start
 
 ```
 sudo systemctl is-active <service>     # active hay failed?
@@ -1418,11 +1620,11 @@ sudo systemctl is-active <service>     # active hay failed?
   └── active → service OK. Lỗi ở app/network layer (sang §11.2)
 ```
 
-### 11.2 Kibana báo "Detection Engine permissions required"
+### 12.2 Kibana báo "Detection Engine permissions required"
 
-→ Xem [§6.7](#67-kibana-báo-detection-engine-permissions-required--thực-ra-thiếu-encryption-keys). Fix: add 3 encryption keys vào keystore + restart Kibana.
+→ Xem [§7.7](#77-kibana-báo-detection-engine-permissions-required--thực-ra-thiếu-encryption-keys). Fix: add 3 encryption keys vào keystore + restart Kibana.
 
-### 11.3 Index `winlogbeat-*` trống / không có data
+### 12.3 Index `winlogbeat-*` trống / không có data
 
 ```
 [1] Logstash có nhận event từ Beats không?
@@ -1465,7 +1667,7 @@ sudo systemctl is-active <service>     # active hay failed?
       └── có index → check docs.count > 0
 ```
 
-### 11.4 Pipeline Logstash validate fail
+### 12.4 Pipeline Logstash validate fail
 
 ```bash
 sudo -u logstash /usr/share/logstash/bin/logstash --path.settings /etc/logstash -t
@@ -1478,7 +1680,7 @@ sudo -u logstash /usr/share/logstash/bin/logstash --path.settings /etc/logstash 
   ```
 - `Configuration OK` → restart safely.
 
-### 11.5 Tail logs nhanh (1 lệnh xem 3 service)
+### 12.5 Tail logs nhanh (1 lệnh xem 3 service)
 
 ```bash
 sudo tail -F /var/log/{elasticsearch/elasticsearch,kibana/kibana,logstash/logstash-plain}.log
