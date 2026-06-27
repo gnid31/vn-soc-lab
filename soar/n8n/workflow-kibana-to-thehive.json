@@ -1,5 +1,5 @@
 {
-  "name": "VN-SOC Kibana Alert → TheHive Case",
+  "name": "VN-SOC Kibana Alert → TheHive Case + Cortex Auto-Enrich",
   "nodes": [
     {
       "parameters": {
@@ -12,53 +12,120 @@
       "name": "Webhook (Kibana action)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [200, 300]
+      "position": [180, 300]
     },
     {
       "parameters": {
-        "functionCode": "// Parse Kibana alert payload\nconst alert = $input.first().json.body || $input.first().json;\nconst ruleName = alert.rule?.name || alert.kibana?.alert?.rule?.name || 'Unknown rule';\nconst severity = alert.rule?.severity || alert.kibana?.alert?.severity || 'medium';\nconst sevMap = { low: 1, medium: 2, high: 3, critical: 4 };\nreturn [{\n  json: {\n    title: `[VN-SOC] ${ruleName}`,\n    description: `Auto-created from Kibana detection rule.\\n\\nRule: ${ruleName}\\nSeverity: ${severity}\\nTimestamp: ${alert['@timestamp'] || alert.kibana?.alert?.original_time || new Date().toISOString()}\\nSource event: ${JSON.stringify(alert, null, 2).substring(0, 2000)}`,\n    severity: sevMap[severity.toLowerCase()] || 2,\n    tlp: 2,\n    pap: 2,\n    tags: ['vn-soc-lab', 'auto-created', `severity-${severity}`],\n    sourceRef: alert.kibana?.alert?.uuid || alert._id || `vnsoc-${Date.now()}`,\n    observables: [\n      alert['source.ip'] ? { dataType: 'ip', data: alert['source.ip'], message: 'source IP' } : null,\n      alert['url.original'] ? { dataType: 'url', data: alert['url.original'], message: 'URL probed' } : null,\n      alert['user_agent.original'] ? { dataType: 'user-agent', data: alert['user_agent.original'], message: 'UA' } : null,\n    ].filter(Boolean)\n  }\n}];"
+        "functionCode": "// Parse Kibana alert → TheHive case payload + observable list\nconst alert = $input.first().json.body || $input.first().json;\nconst ruleName = alert.rule?.name || 'Unknown rule';\nconst severity = (alert.rule?.severity || 'medium').toLowerCase();\nconst sevMap = { low: 1, medium: 2, high: 3, critical: 4 };\n\n// Extract candidate observables (auto-extract for B1)\nconst observables = [];\nif (alert['url.original']) observables.push({ dataType: 'url', data: alert['url.original'], message: 'URL probed' });\nif (alert['source.ip']) observables.push({ dataType: 'ip', data: alert['source.ip'], message: 'Source IP' });\nelse if (alert['source.address']) observables.push({ dataType: 'ip', data: alert['source.address'], message: 'Source address' });\nif (alert['user_agent.original']) observables.push({ dataType: 'user-agent', data: alert['user_agent.original'], message: 'User-Agent' });\n\n// Auto-pick Cortex analyzer per observable type (B2)\nconst analyzerMap = {\n  'ip': 'AbuseIPDB_2_0',\n  'url': 'VirusTotal_GetReport_3_1',\n  'domain': 'VirusTotal_GetReport_3_1',\n  'hash': 'VirusTotal_GetReport_3_1'\n};\n\nreturn [{\n  json: {\n    casePayload: {\n      title: `[VN-SOC] ${ruleName}`,\n      description: `Auto-created from Kibana detection rule.\\n\\nRule: ${ruleName}\\nSeverity: ${severity}\\nTimestamp: ${alert['@timestamp'] || new Date().toISOString()}\\nML score: ${JSON.stringify(alert.ml || {})}\\nSource event (truncated):\\n${JSON.stringify(alert, null, 2).substring(0, 1500)}`,\n      severity: sevMap[severity] || 2,\n      tlp: 2,\n      pap: 2,\n      tags: ['vn-soc-lab', 'auto-created', `severity-${severity}`],\n      sourceRef: alert._alert_id || `vnsoc-${Date.now()}`\n    },\n    observables: observables,\n    analyzerMap: analyzerMap\n  }\n}];"
       },
       "id": "parse-alert",
-      "name": "Parse Alert → Case Payload",
+      "name": "Parse Alert → Case + Observables",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [420, 300]
+      "position": [400, 300]
     },
     {
       "parameters": {
-        "url": "http://192.168.154.165:9000/api/v1/case",
+        "method": "POST",
+        "url": "http://127.0.0.1:9000/api/v1/case",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ title: $json.title, description: $json.description, severity: $json.severity, tlp: $json.tlp, pap: $json.pap, tags: $json.tags, sourceRef: $json.sourceRef }) }}",
+        "jsonBody": "={{ JSON.stringify($json.casePayload) }}",
         "options": {}
       },
-      "id": "thehive-create-case",
+      "id": "create-case",
       "name": "TheHive: Create Case",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [640, 300],
+      "position": [620, 300],
       "credentials": {
-        "httpHeaderAuth": { "id": "thehive-auth", "name": "TheHive Header Auth" }
+        "httpHeaderAuth": { "id": "thehive-auth", "name": "TheHive API Key" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Pair created case with observables list (fan-out one item per observable)\nconst caseData = $input.first().json;\nconst parseData = $('Parse Alert → Case + Observables').first().json;\nreturn parseData.observables.map(obs => ({\n  json: {\n    caseId: caseData._id,\n    caseNumber: caseData.number,\n    observable: obs,\n    analyzerId: parseData.analyzerMap[obs.dataType] || null\n  }\n}));"
+      },
+      "id": "fanout-observables",
+      "name": "Fan-out observables",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [840, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://127.0.0.1:9000/api/case/{{ $json.caseId }}/artifact",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ dataType: $json.observable.dataType, data: $json.observable.data, message: $json.observable.message, tlp: 2 }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "add-observable",
+      "name": "TheHive: Add observable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1060, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "thehive-auth", "name": "TheHive API Key" }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract artifact id from v0 response, attach analyzerId for Cortex run\nconst raw = $input.first().json;\nconst arr = Array.isArray(raw) ? raw : [raw];\nconst obs = arr[0] || {};\nconst fanData = $('Fan-out observables').first().json;\nreturn [{\n  json: {\n    artifactId: obs._id || obs.id,\n    caseId: fanData.caseId,\n    analyzerId: fanData.analyzerId\n  }\n}];"
+      },
+      "id": "prep-cortex",
+      "name": "Prep Cortex job",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1280, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:9000/api/connector/cortex/job",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ analyzerId: $json.analyzerId, cortexId: 'cortex0', artifactId: $json.artifactId }) }}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "run-analyzer",
+      "name": "TheHive: Run Cortex analyzer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "credentials": {
+        "httpHeaderAuth": { "id": "thehive-auth", "name": "TheHive API Key" }
       }
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ ok: true, thehive_case_id: $json._id, thehive_case_number: $json.number }) }}"
+        "responseBody": "={{ JSON.stringify({ ok: true, case_id: $('TheHive: Create Case').first().json._id, case_number: $('TheHive: Create Case').first().json.number, observables_count: $('Fan-out observables').all().length }) }}"
       },
-      "id": "webhook-response",
+      "id": "respond",
       "name": "Return to Kibana",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [860, 300]
+      "position": [1500, 480]
     }
   ],
   "connections": {
-    "Webhook (Kibana action)": { "main": [[{ "node": "Parse Alert → Case Payload", "type": "main", "index": 0 }]] },
-    "Parse Alert → Case Payload": { "main": [[{ "node": "TheHive: Create Case", "type": "main", "index": 0 }]] },
-    "TheHive: Create Case": { "main": [[{ "node": "Return to Kibana", "type": "main", "index": 0 }]] }
+    "Webhook (Kibana action)": { "main": [[{ "node": "Parse Alert → Case + Observables", "type": "main", "index": 0 }]] },
+    "Parse Alert → Case + Observables": { "main": [[{ "node": "TheHive: Create Case", "type": "main", "index": 0 }]] },
+    "TheHive: Create Case": { "main": [[
+      { "node": "Fan-out observables", "type": "main", "index": 0 },
+      { "node": "Return to Kibana", "type": "main", "index": 0 }
+    ]] },
+    "Fan-out observables": { "main": [[{ "node": "TheHive: Add observable", "type": "main", "index": 0 }]] },
+    "TheHive: Add observable": { "main": [[{ "node": "Prep Cortex job", "type": "main", "index": 0 }]] },
+    "Prep Cortex job": { "main": [[{ "node": "TheHive: Run Cortex analyzer", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" }
 }

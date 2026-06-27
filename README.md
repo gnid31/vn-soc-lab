@@ -26,26 +26,75 @@ Most SOC intern CVs list tutorial certifications and toy projects. This repo is 
 
 ## Architecture (final)
 
+```mermaid
+flowchart TB
+    subgraph KALI["🧑‍💻 KALI 192.168.154.151 — attacker + analyst"]
+        ATK[curl DVWA<br/>Atomic Red Team]
+        BR[browser → Kibana / Wazuh /<br/>TheHive / Cortex / n8n]
+    end
+
+    subgraph LAN["🏠 LOCAL VMware NAT vmnet8 — 192.168.154.0/24"]
+        WIN["🖥 Win10 victim<br/>192.168.154.164<br/>Sysmon + Winlogbeat + Wazuh Agent"]
+        ST["🛠 SOC-Tools VM<br/>192.168.154.165<br/>Suricata + DVWA + TheHive 5"]
+        SW["🛡 SOC-Wazuh VM<br/>192.168.154.163<br/>Wazuh stack + Cortex 3"]
+    end
+
+    subgraph VPS["☁️ VPS 43.228.215.234 — central plane"]
+        ELK["📊 Elastic 8.19<br/>ES + Kibana + Logstash<br/>indices: winlogbeat-* / suricata-* / dvwa-apache-*"]
+        ML["🤖 ML Detection<br/>Flask URL classifier<br/>:5000 loopback"]
+        N8N["⚙️ n8n + SOAR bridge<br/>systemd timer poll → webhook<br/>:5678 host network"]
+    end
+
+    ATK -->|attack DVWA| ST
+    ATK -->|attack| WIN
+    WIN -->|Winlogbeat :5044| ELK
+    WIN -->|Wazuh Agent :1514| SW
+    ST -->|Filebeat :5044| ELK
+    ELK -->|ml enrichment HTTP| ML
+    ML -.->|score| ELK
+    ELK -->|alerts index| N8N
+    N8N -->|autossh -R 9000| ST
+    ST -->|TheHive case + observable| SW
+    SW -.->|Cortex analyzer<br/>VirusTotal + AbuseIPDB| ST
+    BR -.->|HTTPS / SSH tunnel| ELK
+    BR -.->|HTTPS / SSH tunnel| SW
+    BR -.->|HTTP LAN| ST
+
+    classDef vps fill:#1e3a8a,stroke:#60a5fa,color:#fff
+    classDef vm fill:#065f46,stroke:#34d399,color:#fff
+    classDef kali fill:#7c2d12,stroke:#fb923c,color:#fff
+    class VPS,ELK,ML,N8N vps
+    class LAN,WIN,ST,SW vm
+    class KALI,ATK,BR kali
 ```
-       KALI (attacker + analyst host)
-          │ curl DVWA / Atomic Red Team
-          │ autossh reverse tunnels VPS↔SOC-Tools
-          │ browser → Kibana / Wazuh / TheHive / Cortex / n8n
-          │
-       LOCAL VMware NAT vmnet8 (192.168.154.0/24):
-          Win10 victim   192.168.154.164   Sysmon + Winlogbeat + Wazuh Agent
-          SOC-Tools VM   192.168.154.165   Suricata + DVWA + TheHive stack
-          SOC-Wazuh VM   192.168.154.163   Wazuh full stack + Cortex stack
-          │
-          │ ship logs (Beats / Wazuh proto)
-          ▼
-       VPS 43.228.215.234 — central plane:
-          Elastic 8.19       ES + Kibana + Logstash multi-branch
-                             indices: winlogbeat-* | suricata-* | dvwa-apache-*
-          ML Detection       Flask URL classifier Docker (Pha 8)
-          n8n + SOAR bridge  systemd timer poll ES → n8n webhook (Pha 9)
-                             → SSH tunnel → TheHive case (auto)
-                             → Cortex analyzer enrich (auto)
+
+**Data flow trong 1 attack lifecycle:**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor K as Kali
+    participant D as DVWA<br/>(SOC-Tools)
+    participant F as Filebeat<br/>(SOC-Tools)
+    participant L as Logstash<br/>(VPS)
+    participant ML as Flask ML API<br/>(VPS)
+    participant E as Elasticsearch<br/>(VPS)
+    participant N as n8n + bridge<br/>(VPS)
+    participant T as TheHive<br/>(SOC-Tools)
+    participant C as Cortex<br/>(SOC-Wazuh)
+
+    K->>D: GET /vulnerabilities/fi/?page=../../../../etc/passwd
+    D->>F: Apache access.log
+    F->>L: ship via :5044
+    L->>ML: POST /predict {url}
+    ML-->>L: {label: malicious, score: 0.91}
+    L->>E: index dvwa-apache-* + ml.* enrichment
+    Note over E: R9 KQL rule fires<br/>(ml.score >= 0.7)
+    E->>N: timer poll new alert (30s)
+    N->>T: create case + observable URL/IP
+    T->>C: run AbuseIPDB / VirusTotal analyzer
+    C-->>T: report attached (score, taxonomies)
+    Note over T: Analyst sees enriched case<br/>ready to investigate
 ```
 
 For full setup details per host: [`report.md`](report.md) (Vietnamese, ~1700 lines).
