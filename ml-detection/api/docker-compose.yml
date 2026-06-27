@@ -1,0 +1,16 @@
+services:
+  ml-url-api:
+    build: .
+    container_name: ml-url-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      MODEL_PATH: /app/model/url_classifier.joblib
+      THRESHOLD: "0.5"
+    mem_limit: 400m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

@@ -101,6 +101,7 @@ Vì lab này:
 | R6 | `[VN-SOC R6] Network Scan Detection` | T1595 | [R6](R6-T1595-network-scan.md) | ✅ | ✅ 2026-06-27 | 4 (suricata-*) |
 | R7 | `[VN-SOC R7] Suspicious User-Agent — Web Attack Tool` | T1595.002 | [R7](R7-T1595.002-suspicious-ua.md) | ✅ | ✅ 2026-06-27 (sau 2 KQL fix) | 9 (dvwa-apache-*) |
 | R8 | `[VN-SOC R8] Sensitive File Path Probe` | T1083 | [R8](R8-T1083-sensitive-file-probe.md) | ✅ | ✅ 2026-06-27 (sau 3 KQL fix) | 10 (dvwa-apache-*) |
+| R9 | `[VN-SOC R9] ML Malicious URL Detection` | T1190 | [R9](R9-T1190-ml-malicious-url.md) | ✅ | ✅ 2026-06-27 (Pha 8 ML pipeline) | dvwa-apache-* enriched 11+ docs |
 
 ## Pitfalls / Lessons learned trong Pha 3
 
