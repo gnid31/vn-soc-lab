@@ -59,4 +59,6 @@
 [2026-06-27 03:55] [actor=gnid31] [phase=6] sửa R7 KQL từ "agent: \"*sqlmap*\"" → "user_agent.original: *sqlmap*"; sửa R8 KQL từ "request: *\\.env*" → "url.original.keyword: *.env*"
 [2026-06-27 04:00] [actor=claude] [phase=6] verify final — R6 fire 4 alerts, R7 9 alerts, R8 10 alerts trong 5 phút smoke-test. Total 23 alerts across 3 rules. Tổng 8 rule R1-R8 verified end-to-end across 6 MITRE tactics
 [2026-06-27 04:05] [actor=claude] [phase=6] update specs + readme với 5 KQL bugs đã debug (Lesson 7 ECS field convert + Lesson 8 KQL syntax pitfalls); add status verified vào R6/R7/R8 headers
+[2026-06-27 12:02] [actor=antigravity] [phase=7] cài đặt và cấu hình Wazuh Agent 4.9.2 trên Win10, kết nối thành công tới Manager 192.168.154.163
+
 
