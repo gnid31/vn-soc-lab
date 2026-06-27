@@ -63,7 +63,14 @@ services:
       - "elasticsearch"
       - "--storage-directory"
       - "/data/files"
-      - "--no-config-cortex"
+      - "--cortex-hostnames"
+      - "192.168.154.163"
+      - "--cortex-port"
+      - "9001"
+      - "--cortex-proto"
+      - "http"
+      - "--cortex-keys"
+      - "${CORTEX_KEY}"
     volumes:
       - thehive_data:/data
     mem_limit: 900m

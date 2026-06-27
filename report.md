@@ -153,6 +153,7 @@ gh auth login    # cùng flow như Kali
 | 7 | Wazuh HIDS Full Stack | ✅ | Multi-SIEM: Wazuh Manager + Indexer + Dashboard + Win10 Agent |
 | 8 | ML Detection (R9) | ✅ | TF-IDF + LogReg URL classifier, Flask Docker, Logstash enrichment |
 | 9 | SOAR & Case Management | ✅ | TheHive 5 + n8n + alert bridge → 34 cases auto |
+| 9.5 | Cortex Analyzer Integration | ✅ | Cortex 3.1.7 + VT + AbuseIPDB → TheHive observables auto-enrich |
 
 **Stack đang chạy:**
 
@@ -1152,6 +1153,15 @@ Auto-pipeline: detection alert → ES → bridge → n8n → TheHive case.
 - Smoke-test: **34 cases tổng cộng** (3 manual + 31 auto-forwarded từ R6/R7/R8/R9).
 - 7 lessons: n8n auth env deprecation, TheHive 5 args khác v4, perms cần org-admin/analyst, SSH GatewayPorts + Docker `network_mode: host`, n8n HTTP node default GET, Kibana license tier, f-string quirk repeat.
 
+### 6.7b Pha 9.5 — Cortex Analyzer Integration — [`pha9.5-results.md`](pha9.5-results.md)
+
+Khâu cuối khép SOAR loop: TheHive observables auto-enrich via Cortex analyzers.
+- Cortex 3.1.7 + ES 7 standalone trên SOC-Wazuh (tận dụng RAM headroom 1.5 GB, cùng LAN 192.168.154.x với SOC-Tools — không cần tunnel).
+- 2 analyzers free-tier: VirusTotal_GetReport (500/day) + AbuseIPDB (1000/day).
+- TheHive 5 wire qua `--cortex-hostnames/port/proto/keys` command args (no runtime config endpoint).
+- Smoke-test: observable `185.220.101.1` (Tor exit) → AbuseIPDB → report attach (abuse score 100, hostname `berlin01.tor-exit.artikel10.org`, 56 reports) vào case #40.
+- 5 lessons: ES mem_limit 600m→900m (thrashing), job_directory bind mount (not named volume), Cortex 3 CSRF strict (GUI bootstrap), TheHive 5 Cortex config via container args only, v0 `/api/case/.../artifact` fallback khi v1 báo 403.
+
 ### 6.8 Toàn cảnh — Detection rules R1-R9 cover 9 MITRE techniques
 
 | Tactic (TA) | Technique | Rule | Source |
@@ -1355,6 +1365,8 @@ Phần "còn thiếu" sẽ đề cập trong `roadmap.md §G` (mở rộng nếu
 | Cross-network SSH tunneling | autossh reverse `-R 0.0.0.0:9000` + GatewayPorts + container `network_mode: host` | `pha9-results.md §3.5 + §3.6` |
 | Free-tier license workaround | systemd timer poll ES alerts → n8n webhook (Kibana Basic không có `.webhook`) | `soar/bridge/alert-forwarder.py` |
 | API-driven config | Kibana Detection Engine REST API tạo R9, TheHive REST API auth + org/user/key bootstrap | `pha8-results.md §3.8` + `pha9-results.md §3.4` |
+| Threat-intel auto-enrich | Cortex 3 + VirusTotal + AbuseIPDB → TheHive observables auto-enrich (case #40 Tor IP abuse 100) | `pha9.5-results.md` |
+| Docker socket sibling spawn | Cortex spawn analyzer container via host docker socket — job_directory bind mount (KHÔNG named volume) | `pha9.5-results.md §Lesson 2` |
 
 ---
 

@@ -1,0 +1,49 @@
+services:
+  cortex-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.27
+    container_name: cortex-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - cluster.name=cortex
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms384m -Xmx384m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - cortex_es_data:/usr/share/elasticsearch/data
+    mem_limit: 900m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  cortex:
+    image: thehiveproject/cortex:3.1.7
+    container_name: cortex
+    restart: unless-stopped
+    depends_on:
+      cortex-elasticsearch: { condition: service_healthy }
+    ports:
+      - "0.0.0.0:9001:9001"
+    environment:
+      JVM_OPTS: "-Xms384m -Xmx384m"
+      job_directory: /tmp/cortex-jobs
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/cortex-jobs:/tmp/cortex-jobs
+      - ./application.conf:/etc/cortex/application.conf:ro
+    mem_limit: 600m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9001/api/status || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  cortex_es_data:
