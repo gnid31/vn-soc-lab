@@ -1,0 +1,11 @@
+[Unit]
+Description=VN-SOC alert forwarder (ES → n8n webhook)
+After=network-online.target elasticsearch.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/vnsoc-soar.env
+ExecStart=/usr/bin/python3 /opt/vnsoc-soar/alert-forwarder.py
+User=namth
+StandardOutput=journal
+StandardError=journal

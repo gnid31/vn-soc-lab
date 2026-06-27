@@ -1,0 +1,11 @@
+[Unit]
+Description=VN-SOC alert forwarder timer
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,74 @@
+services:
+  cassandra:
+    image: cassandra:4.1.4
+    container_name: thehive-cassandra
+    restart: unless-stopped
+    hostname: cassandra
+    environment:
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+      CASSANDRA_CLUSTER_NAME: thehive
+    volumes:
+      - cassandra_data:/var/lib/cassandra/data
+    mem_limit: 900m
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.27
+    container_name: thehive-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - cluster.name=hive
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    mem_limit: 900m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  thehive:
+    image: strangebee/thehive:5.4.0-1
+    container_name: thehive
+    restart: unless-stopped
+    depends_on:
+      cassandra: { condition: service_healthy }
+      elasticsearch: { condition: service_healthy }
+    ports:
+      - "0.0.0.0:9000:9000"
+    environment:
+      JVM_OPTS: "-Xms512m -Xmx512m"
+    command:
+      - "--secret"
+      - "${THEHIVE_SECRET}"
+      - "--cql-hostnames"
+      - "cassandra"
+      - "--index-backend"
+      - "elasticsearch"
+      - "--es-hostnames"
+      - "elasticsearch"
+      - "--storage-directory"
+      - "/data/files"
+      - "--no-config-cortex"
+    volumes:
+      - thehive_data:/data
+    mem_limit: 900m
+
+volumes:
+  cassandra_data:
+  es_data:
+  thehive_data:
