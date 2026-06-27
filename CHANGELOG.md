@@ -52,4 +52,11 @@
 [2026-06-26 04:30] [actor=claude] [phase=6] VPS Logstash pipeline rename winlogbeat.conf → main.conf multi-branch: Winlogbeat → winlogbeat-*, Filebeat source_type=suricata → suricata-*, Filebeat source_type=dvwa-apache → dvwa-apache-* (with COMBINEDAPACHELOG grok). Single port 5044 cho cả 2 beats, no UFW change
 [2026-06-26 04:40] [actor=claude] [phase=6] verify end-to-end Kali → DVWA — 199 Suricata docs + 29 alerts (ET INFO Kali DHCP fingerprint, ET INFO Hidden Environment File probe), 33 DVWA Apache docs grok parsed. Pipeline hoạt động đa-nguồn không drop
 [2026-06-26 04:45] [actor=claude] [phase=6] viết pha6-results.md (~7 sections, 6 lessons learned: LVM trap, curl|sudo pipe broken, Filebeat dir permission, multi-branch single port, ET Open volume tune, PATH strip Bash sandbox); commit configs/main.conf + configs/filebeat-soc-tools.yml + configs/docker-compose-dvwa.yml
+[2026-06-27 03:30] [actor=gnid31] [phase=6] viết 3 spec R6/R7/R8 + tạo trên Kibana UI sau khi tạo data view suricata-* và dvwa-apache-*
+[2026-06-27 03:35] [actor=claude] [phase=6] discover Apache hung sau VM reboot — docker compose restart vnsoc-dvwa khôi phục serving; re-verify Filebeat ship 5 events/8s ESTABLISHED tới Logstash:5044
+[2026-06-27 03:40] [actor=gnid31] [phase=6] đổi schedule tất cả rules từ 5min interval → 1min interval (lab cycle nhanh, dev feedback ngắn)
+[2026-06-27 03:50] [actor=claude] [phase=6] debug R7+R8 0 alerts dù 21+ docs match — Logstash 8.x ECS v8 auto-rename grok fields (clientip→source.address, verb→http.request.method, request→url.original, agent→user_agent.original); Filebeat metadata overwrite agent root. R6 OK vì Suricata native ECS
+[2026-06-27 03:55] [actor=gnid31] [phase=6] sửa R7 KQL từ "agent: \"*sqlmap*\"" → "user_agent.original: *sqlmap*"; sửa R8 KQL từ "request: *\\.env*" → "url.original.keyword: *.env*"
+[2026-06-27 04:00] [actor=claude] [phase=6] verify final — R6 fire 4 alerts, R7 9 alerts, R8 10 alerts trong 5 phút smoke-test. Total 23 alerts across 3 rules. Tổng 8 rule R1-R8 verified end-to-end across 6 MITRE tactics
+[2026-06-27 04:05] [actor=claude] [phase=6] update specs + readme với 5 KQL bugs đã debug (Lesson 7 ECS field convert + Lesson 8 KQL syntax pitfalls); add status verified vào R6/R7/R8 headers
 

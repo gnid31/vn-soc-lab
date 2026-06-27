@@ -98,6 +98,9 @@ Vì lab này:
 | R3 | `[VN-SOC R3] Registry Run Key Modification` | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ✅ | ✅ 2026-06-25 | 4 |
 | R4 | `[VN-SOC R4] Multiple Failed Logon — Brute Force` | T1110 | [R4](R4-T1110-brute-force-login.md) | ✅ | ✅ 2026-06-25 (sau fix config) | 1 |
 | R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | [R5](R5-T1071.001-non-browser-outbound.md) | ✅ | ✅ 2026-06-25 + tuned (FP -100%) | 55 → 0 sau tune |
+| R6 | `[VN-SOC R6] Network Scan Detection` | T1595 | [R6](R6-T1595-network-scan.md) | ✅ | ✅ 2026-06-27 | 4 (suricata-*) |
+| R7 | `[VN-SOC R7] Suspicious User-Agent — Web Attack Tool` | T1595.002 | [R7](R7-T1595.002-suspicious-ua.md) | ✅ | ✅ 2026-06-27 (sau 2 KQL fix) | 9 (dvwa-apache-*) |
+| R8 | `[VN-SOC R8] Sensitive File Path Probe` | T1083 | [R8](R8-T1083-sensitive-file-probe.md) | ✅ | ✅ 2026-06-27 (sau 3 KQL fix) | 10 (dvwa-apache-*) |
 
 ## Pitfalls / Lessons learned trong Pha 3
 
@@ -109,3 +112,5 @@ Vì lab này:
 | 4 | Kibana "Detection Engine permissions required" thật ra do thiếu encryption keys | (toàn bộ) | Setup Kibana 8.x không tự sinh keys. Xem [report.md §6.7](../report.md) |
 | 5 | KQL OR syntax pitfall — quên `OR` giữa item trong exclude list | R5 tune | status=succeeded KHÔNG đảm bảo logic. Acceptance test: query sample alert post-save. Xem [pha4-results §Lesson 5](../pha4-results.md) |
 | 6 | Verify alert query time window quá hẹp → miss event | R2 verify | Atomic test event có thể ngoài window `now-30m` do shipping delay + rule schedule. Mở rộng range hoặc query no-time-filter. Xem [pha4-results §8](../pha4-results.md) |
+| 7 | Logstash 8.x ECS v8 mode auto-convert grok fields | R7+R8 debug | Grok `COMBINEDAPACHELOG` ra `clientip/verb/request/agent` nhưng Logstash rename thành `source.address/http.request.method/url.original/user_agent.original`. Filebeat metadata cũng overwrite `agent` field root. Xem [R8 §2a](R8-T1083-sensitive-file-probe.md#2a-bài-học-kql-bugs-pha-6) |
+| 8 | KQL syntax pitfalls: `.keyword` cho tokenize text, quote = literal, `\\.` invalid escape, `/*` Lucene comment | R7+R8 debug | Test KQL trên Discover trước khi gắn vào detection rule. 5 bugs đã gặp xem [R8 §2a](R8-T1083-sensitive-file-probe.md#2a-bài-học-kql-bugs-pha-6) |
