@@ -66,6 +66,8 @@ VPS 43.228.215.234:
 
 ## 3. Setup stages
 
+> **Dual-path convention:** Stage A (VM RAM upgrade) qua VMware GUI. Stage B/C/D (n8n + TheHive + bootstrap) có cả GUI (browser localhost URL) + CLI (Docker compose + REST API) — đa số stages **GUI ưu tiên** vì n8n workflow builder + TheHive admin UI đẹp. Stage E (SSH tunnel) + G (systemd timer) là **CLI-only** (network/service admin). Stage F (n8n workflow) là **GUI-only** với JSON export cho version control.
+
 ### 3.1 Stage A — Upgrade SOC-Tools RAM 2→4 GB
 
 **GUI (ưu tiên):**

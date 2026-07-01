@@ -71,6 +71,8 @@ VPS 43.228.215.234
 
 ## 3. Setup stages
 
+> **Dual-path convention:** Setup stages dưới đây phần lớn **CLI-only** — Python ML training, Flask app, Docker build, Logstash filter config đều file-based/CLI. GUI equivalent chỉ có ở Stage H (Kibana rule create) + Stage E alternative (Portainer container deploy nếu muốn). Stack Management → Logstash Pipelines UI tồn tại nhưng cần Gold license — ngoài scope.
+
 ### 3.1 Stage A — VPS pre-flight check (RAM, disk, CPU)
 
 > Theo roadmap F'.5: bắt buộc check RAM trước khi deploy container mới trên VPS.

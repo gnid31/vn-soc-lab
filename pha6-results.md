@@ -52,6 +52,8 @@ VPS 43.228.215.234:
 
 ## 3. Setup stages
 
+> **Dual-path convention:** Setup stages Linux infra dưới đây phần lớn **CLI-only** (LVM, Docker daemon, Suricata service, Filebeat + Logstash config file — không có GUI edit chuẩn cho server-side install). Nơi có GUI equivalent (Portainer container view, DVWA web UI, Kibana rule create) được ghi rõ. VMware VM tạo qua GUI (đã cover pha7 §3.1). Detection rule creation qua Kibana GUI (đã cover detection-rules/README.md workflow).
+
 ### 3.1 Stage A — Extend LVM (gotcha: Ubuntu Server default chỉ alloc 50% disk)
 
 Triệu chứng:

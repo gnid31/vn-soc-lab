@@ -50,6 +50,8 @@ Pha 9 đã có **detect → ES → bridge → n8n → TheHive case auto**. Còn 
 
 ## 3. Setup stages
 
+> **Dual-path convention:** Stage A (resource check) + Stage B (Docker deploy) + Stage F (TheHive Cortex wire) là **CLI-only** (service config file/systemd). Stage C (bootstrap) + Stage D (enable analyzers) + Stage G (smoke-test) có **GUI ưu tiên** (Cortex 3 CSRF strict, GUI đường tắt) — CLI chỉ khả thi tới bước tạo superadmin đầu tiên. Stage E (analyzer test) qua Bearer API key CLI hoặc GUI Cortex "Run Analyzer" button.
+
 ### 3.1 Stage A — Tài nguyên check trước deploy
 
 ```bash

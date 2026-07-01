@@ -59,6 +59,8 @@ DUAL endpoint shipping từ Win10:
 
 ## 3. Setup stages
 
+> **Dual-path convention:** Stage A (VM create) + Stage G (Wazuh Agent MSI install) + Stage H (verify Manager) có cả **GUI ưu tiên** + CLI. Stage B (sysctl) + Stage C (Docker install) + Stage D (Wazuh stack) + Stage F (disk expand `growpart`) là **CLI-only** — Linux sysadmin không có GUI standard cho những tác vụ này.
+
 ### 3.1 Stage A — Tạo VM SOC-Wazuh (VMware Workstation GUI)
 
 **GUI (ưu tiên):**
