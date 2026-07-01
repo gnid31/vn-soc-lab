@@ -19,18 +19,25 @@
 - Xây dựng **detection ML inline**: train classifier URL malicious (TF-IDF char n-gram + LogisticRegression scikit-learn, dataset 459 URL synthetic), deploy Flask + gunicorn Docker multi-stage trên VPS (mem_limit 400 MB), Logstash filter-http enrich mỗi DVWA event với `[ml]` object → R9 fire 9 alerts 100% TP ở threshold 0.7.
 - Triển khai **SOAR đầy đủ**: TheHive 5.4 (Cassandra + ES 7) + n8n 1.74 + autossh reverse SSH tunnel cross-network + systemd timer poll ES alerts → n8n webhook (workaround Kibana Basic license không có `.webhook` connector). n8n workflow auto-extract observables (URL/IP/UA) từ alert payload → tạo TheHive case auto.
 - Tích hợp **Cortex 3 threat-intel enrichment**: VirusTotal + AbuseIPDB analyzers free-tier; mỗi observable trong case được auto-run analyzer phù hợp (AbuseIPDB cho IP, VirusTotal cho URL/hash); end-to-end detect → case → enrich trong ~60-90 giây không cần thao tác tay.
-- **Advanced detection engineering** — mở rộng lên **13 rules R1-R13 với 4/5 Kibana rule types** (query + threshold + EQL sequence + new_terms + indicator match). R10 EQL sequence rule bắt multi-stage attack (process_creation → network_connection → LSASS_access cùng host trong 10 phút) — behavioral detection thay signature. R12 new_terms baseline drift catch first-seen process image trên endpoint fleet.
+- **Advanced detection engineering** — mở rộng lên **17 rules R1-R17 với 4/5 Kibana rule types** (query + threshold + EQL sequence + new_terms + indicator match). R10 EQL sequence rule bắt multi-stage attack (process_creation → network_connection → LSASS_access cùng host trong 10 phút) — behavioral detection thay signature. R12 new_terms baseline drift catch first-seen process image trên endpoint fleet.
 - **Sigma rule authoring** — viết detection portable YAML + `sigma-cli` convert sang Elastic Lucene / EQL / ES|QL / Splunk SPL / Sentinel KQL. Portable across SIEM vendors, no lock-in.
 - **Log enrichment pipeline production-grade** — Logstash filters: GeoIP src/dest IP (skip RFC1918 private) → `source.geo.location` (geo_point), `source.as.*` (ASN + org); useragent parser → `user_agent.name/os/device`; SHA256 fingerprint → `event.hash` dedup; URLhaus IOC feed 5000 malicious URL paths refresh daily via systemd timer → tag `ioc_match` matching events. R13 indicator match rule leveraging these tags.
-- **Kibana ops production** — ILM policy 30-day rollover (hot 7d → warm shrink+forcemerge → delete 30d), index template + component template (`geo_point` mapping, `ignore_above: 8192` cho long PowerShell CommandLine), Data View source filters giảm 44→17 field per doc, runtime field Painless script (`attack_score = ml.score*100 + bonuses`), 6 saved searches Discover column presets, 3 dashboards + Kibana Maps (world attack sources) + Canvas exec workpad.
-- Sản xuất **~3500 dòng docs Vietnamese dual-path GUI + CLI** (report.md + 7 file pha results + 13 rule spec + ELK-GUIDE.md + Sigma YAML) đảm bảo reproducibility — recruiter clone repo có thể tái triển khai trong ~6 giờ không cần AI agent.
+- **Kibana ops production** — ILM policy 30-day rollover (hot 7d → warm shrink+forcemerge → delete 30d), index template + component template (`geo_point` mapping, `ignore_above: 8192` cho long PowerShell CommandLine, ECS field aliases `process.executable`/`user.name`/`file.path`/`registry.key`/`dns.question.name`), Data View source filters giảm 44→17 field per doc, runtime field Painless script (`attack_score = ml.score*100 + bonuses`), 6 saved searches Discover column presets, 3 dashboards + Kibana Maps (world attack sources) + Canvas exec workpad.
+- **File Integrity Monitoring (FIM)** — Wazuh Agent syscheck trên Win10 endpoint (4 dirs realtime + 5 Windows Registry keys Run/RunOnce/Defender-exclusions), 7 custom Wazuh Manager rules (100010-100016) cover T1547.001 persistence + T1562.001 defense evasion + T1098 credential + T1053.003 cron. Filebeat ship Wazuh alerts.json → Elastic index `wazuh-alerts-*` unified dual-SIEM Kibana view. R14 fired 9 alerts smoke-test (Startup folder + hosts modify).
+- **Malware detection với YARA** — 9 curated rules (EICAR + PowerShell encoded + reverse-shell netcat + LinPEAS + Metasploit MZ/ELF payload + PHP web shell + ransomware note + Kali attack binary + suspicious base64), systemd timer daily 03:30 scan critical paths + Filebeat ship NDJSON → `yara-scan-*`. Tune FP requiring ELF/PE magic bytes: 177→0 false positives. R15 rule fire when YARA match (excluding test/EICAR).
+- **Deception technology (Cowrie SSH honeypot)** — Docker container port 2222/TCP public, capture attacker session (login attempts + shell commands + malware upload attempts) → Filebeat forward `cowrie.json` → index `cowrie-*`. R16 fire on login/command capture. Smoke-test 19 events captured từ sshpass brute force.
+- **UEBA behavioral analytics** — Python script query Elasticsearch aggregations 6 metrics (failed logon count, unique process image, outbound dest IP, DVWA URL count, Cowrie src IP, Suricata unique src), compute z-score vs 14-day baseline, threshold ≥ 2.0 std deviation = anomaly. systemd timer daily 04:00 + Filebeat → `ueba-*`. R17 fire on `ueba.is_anomaly:true`. Free-tier alternative Elastic ML (paid).
+- Sản xuất **~5000 dòng docs Vietnamese dual-path GUI + CLI** (report.md + 10 file pha results + 17 rule spec + ELK-GUIDE.md + MASTER-GUIDE.md single-page reference + Sigma YAMLs) đảm bảo reproducibility — recruiter clone repo có thể tái triển khai trong ~8 giờ không cần AI agent.
 
 **Outcomes đo lường được:**
-- **13 detection rules** trải **11 MITRE ATT&CK techniques** (T1003/T1027/T1059/T1071/T1083/T1110/T1189/T1190/T1204/T1547/T1595); 4/5 Kibana rule types coverage.
-- 34+ TheHive case auto-tạo từ smoke-test; observables auto-extracted + Cortex analyzer auto-run.
-- 5000 URLhaus IOC feed refresh daily; Kibana Maps world heatmap 7+ external attack sources.
-- Multi-host stack: 1 VPS + 4 VM (Kali / Win10 / SOC-Tools / SOC-Wazuh), ~14 Docker container chạy đồng thời.
-- ELK ops: 30-day ILM policy, 3 custom dashboards + Maps + Canvas workpad, 6 saved searches + runtime field.
+- **17 detection rules R1-R17** trải **17 MITRE ATT&CK techniques** (T1003.001, T1027, T1053.003, T1059/.001, T1071.001, T1078, T1083, T1098/.004, T1105, T1110, T1189, T1190, T1204, T1543.002, T1547.001, T1562.001, T1595/.002); 4/5 Kibana rule types coverage.
+- **9 log source indices**: winlogbeat, suricata, dvwa-apache, wazuh-alerts (FIM), syslog, docker, yara-scan, cowrie (honeypot), ueba.
+- 34+ TheHive case auto-tạo từ smoke-test; observables auto-extracted + Cortex analyzer auto-run (VT + AbuseIPDB); end-to-end detect → case → enriched ~60-90s.
+- 5000 URLhaus IOC feed refresh daily; Kibana Maps world heatmap 7+ external attack sources; Canvas exec dashboard.
+- Multi-host stack: 1 VPS + 4 VM (Kali / Win10 / SOC-Tools / SOC-Wazuh), ~15 Docker container chạy đồng thời.
+- ELK ops: 30-day ILM policy, 3 custom dashboards + Maps + Canvas workpad, 6 saved searches + runtime field, ECS field aliases (`process.*`, `user.*`, `file.*`, `registry.*`, `dns.*`).
+- Wazuh FIM Win10 + custom Manager rules (100010-100016) + Filebeat ship alerts.json → Elastic unified.
+- Cowrie SSH honeypot expose port 2222 public — 19+ attacker session events captured (login attempts + shell commands).
 
 ---
 
@@ -50,11 +57,15 @@
 - Kibana rule types mastered: **query, threshold, EQL sequence, new_terms, indicator match** (4/5)
 - KQL / EQL / Lucene / ES|QL languages fluent
 - **Sigma YAML** portable rule authoring + `sigma-cli` convert cross-SIEM
-- ECS v8 schema — `event.code`, `source.geo.*`, `user_agent.*`, `threat.indicator.*`
-- MITRE ATT&CK technique mapping (**11 techniques** deployed)
+- ECS v8 schema + field aliases (`process.executable`/`user.name`/`file.path`/`registry.key`/`dns.question.name`)
+- MITRE ATT&CK technique mapping (**17 techniques** deployed, R1-R17)
 - Atomic Red Team adversary emulation + FP tuning iteratively
 - ML-based detection (TF-IDF char n-gram + LogisticRegression, scikit-learn 1.5)
 - Multi-stage attack detection via EQL sequence (`sequence by host.name with maxspan=10m [...]`)
+- **YARA malware detection** rule authoring + FP tuning ELF/PE magic requirement
+- **UEBA behavioral analytics** z-score baseline vs 14-day rolling window
+- **FIM** (Wazuh syscheck) endpoint file + registry integrity monitoring
+- **Deception (Cowrie honeypot)** SSH bait attackers on public port 2222
 
 **Endpoint & Network Telemetry**
 - Sysmon (SwiftOnSecurity + custom ProcessAccess for LSASS), Winlogbeat
@@ -111,9 +122,22 @@
 ## Liên kết kèm CV (đề xuất)
 
 ```
-GitHub:        github.com/gnid31/vn-soc-lab
-README:        Architecture diagram Mermaid + 9 rule MITRE table + repo layout
-Live demo:     (record theo DEMO.md script — 60-90s asciinema/OBS)
-Main report:   report.md (1700+ dòng VI, dual-path GUI + CLI)
-Detection:    detection-rules/ (9 KQL spec + NDJSON export)
+GitHub:           github.com/gnid31/vn-soc-lab
+⭐ MASTER-GUIDE:   Single-page consolidated reference — architecture + 14 phases
+                 + 17 rules + deploy quick-start + troubleshooting + skills
+                 matrix. Recruiter đọc 3 phút hiểu big picture.
+README:           Landing page — Mermaid architecture + Phase index + Where to start
+Live demo:        (record theo DEMO.md script — 60-90s asciinema/OBS)
+Main report:      report.md (1700+ dòng VI, dual-path GUI + CLI)
+Analyst guide:    ELK-GUIDE.md (11 sections, Discover/Dashboard/ILM/runtime field)
+Detection rules:  detection-rules/ (17 KQL spec + Sigma YAML + NDJSON exports)
+Incident IR:      incidents/VN-SOC-2026-0001-killchain.md (NIST 800-61 format)
+Per-phase docs:   pha4/6/7/8/9/9.5/11/12/13/14-results.md (deep dive từng pha)
 ```
+
+**Recruiter workflow đề xuất:**
+1. Click GitHub link
+2. README.md 30 giây skim
+3. Nhấn vào MASTER-GUIDE.md → 3 phút overview
+4. Nhấn per-phase doc bất kỳ để verify depth (recommended: `pha8-results.md` ML pipeline, `pha9-results.md` SOAR, hoặc `pha14-results.md` YARA+Cowrie)
+5. Nếu cần deep-dive detection: `detection-rules/README.md` + spec files
