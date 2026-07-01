@@ -1,0 +1,15 @@
+{
+  "index_patterns": ["winlogbeat-*", "suricata-*", "dvwa-apache-*"],
+  "priority": 500,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.lifecycle.name": "vnsoc-30d"
+    }
+  },
+  "_meta": {
+    "description": "VN-SOC Lab custom indices — 30d ILM policy, single-node no replicas",
+    "managed_by": "vn-soc-lab pha10"
+  }
+}
