@@ -82,6 +82,8 @@ Lab hiện đang có 4 legacy `visualization` type viz + 3 dashboards + Maps + C
 
 ### 4.1 New Logstash inputs
 
+> **CLI-only.** Logstash pipeline config qua file `/etc/logstash/conf.d/*.conf` — không có GUI edit. Kibana Stack Management → Logstash Pipelines UI (centralized management) tồn tại nhưng cần Elastic Gold license và setup xpack — bỏ qua trong lab Basic.
+
 **File `configs/main.conf` input block:**
 ```ruby
 input {
@@ -126,6 +128,8 @@ sudo ufw allow 5145/tcp
 
 ### 4.2 Rsyslog client setup (Linux endpoint side)
 
+> **CLI-only (Linux host config).** Rsyslog config file-based. Không có GUI. Windows tương đương: cài NXLog hoặc Winlogbeat (đã cover Pha 2).
+
 **Trên bất kỳ Linux host cần ship syslog:**
 ```bash
 # Add remote destination vào rsyslog config
@@ -144,6 +148,8 @@ curl -sk -u "elastic:<PWD>" "https://localhost:9200/syslog-*/_search?size=1" \
 ```
 
 ### 4.3 Docker container JSON logs (SOC-Tools side)
+
+> **CLI-only.** Docker log driver + Filebeat config file-based. Portainer GUI có view container logs realtime nhưng không setup shipper. Kubernetes có sidecar log shipper qua Helm chart — ngoài scope lab.
 
 **Filebeat autodiscover mode config trên bất kỳ Docker host:**
 ```yaml

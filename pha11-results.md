@@ -59,7 +59,23 @@ Saved objects (in `elk-configs/saved-objects/vnsoc-all.ndjson`):
 
 ### 3.1 R10 — EQL Sequence Rule
 
-**Query:**
+**GUI (ưu tiên):**
+1. Kibana → **Security → Rules → Detection rules → Create new rule**.
+2. Rule type: **Event correlation** (EQL).
+3. Source: Data View → `winlogbeat-*`.
+4. EQL query paste dưới đây.
+5. About: name `[VN-SOC R10] Multi-Stage Attack — Process + Network + LSASS Sequence (EQL)`, severity **Critical**, risk 90.
+6. MITRE: T1003.001 (Credential Access) + T1059 (Execution).
+7. Schedule: every 5m, look-back 15m.
+8. Save & enable.
+
+**CLI (deployed via Kibana Detection Engine REST API — reproducibility):**
+```bash
+curl -sk -u "elastic:<PWD>" -X POST "http://localhost:5601/api/detection_engine/rules" \
+  -H "kbn-xsrf: true" -H "Content-Type: application/json" -d @r10-payload.json
+```
+
+**Query (EQL syntax):**
 ```
 sequence by host.name with maxspan=10m
   [process where event.code == "1" and winlog.event_data.Image :
@@ -81,6 +97,10 @@ sequence by host.name with maxspan=10m
 
 ### 3.2 R11 — Threshold Rule (Web Brute Force)
 
+**GUI:** Kibana → Security → Rules → Create → **Threshold** rule type → source `dvwa-apache-*` → query dưới → Threshold field `source.address`, value 20 → schedule 1m/5m.
+
+**CLI:** POST tới `/api/detection_engine/rules` với `type: threshold` + `threshold: {field: [source.address], value: 20}`.
+
 ```
 Query: url.original : "/login.php" and http.request.method : "POST"
 Threshold: source.address >= 20 requests / 5 min
@@ -89,6 +109,10 @@ Threshold: source.address >= 20 requests / 5 min
 Khác R4 (Windows brute force qua Event 4625) — R11 nhìn HTTP layer thay vì Windows Security Event.
 
 ### 3.3 R12 — New Terms Rule (Baseline Drift)
+
+**GUI:** Create rule → **New terms** → source `winlogbeat-*` → filter query → "Fields" pick `winlog.event_data.Image.keyword` → history window 14d.
+
+**CLI:** POST rule với `type: new_terms` + `new_terms_fields: [...]` + `history_window_start: "now-14d"`.
 
 ```
 Query: event.code : "1"
@@ -103,6 +127,10 @@ Alert khi 1 process Image chạy lần đầu trong 14 ngày. Catch:
 
 ### 3.4 R13 — Indicator Match / Threat Intel
 
+**GUI:** Kibana → Security → Rules → Create → **Custom query** rule → source `dvwa-apache-*` → paste query dưới → severity Critical.
+
+**CLI:** POST rule với `type: query`.
+
 Không dùng built-in `threat_match` rule type (require indicator index). Thay bằng plain `query` rule check tag `ioc_match` mà Logstash translate filter đã add (§4.3).
 
 **Query:** `threat.indicator.provider : "urlhaus_recent" and tags : "ioc_match"`
@@ -112,6 +140,10 @@ Simple, low-latency, no ES join. Trade-off: chỉ match paths trong dictionary, 
 ### 3.5 Sigma workflow
 
 Sigma là ngôn ngữ detection **portable cross-SIEM**. Viết YAML 1 lần → convert sang KQL / Lucene / EQL / ES|QL / Splunk SPL / Sentinel KQL / etc.
+
+> **CLI-only workflow.** Sigma community không có official GUI. Alternatives tương đương:
+> - Online: `https://uncoder.io/` (SOC Prime — free) — paste Sigma YAML → chọn backend → generate KQL/Lucene/SPL.
+> - VS Code extension: `Sigma Language Support` (syntax highlighting + validate).
 
 **Cài `sigma-cli`:**
 ```bash
@@ -161,6 +193,8 @@ sigma convert -t eql -p ecs_windows sigma-r1-powershell-encoded.yml
 ## 4. Log Enrichment Pipeline — chi tiết
 
 ### 4.1 GeoIP filter
+
+> **CLI-only.** Logstash config file-based, không có GUI Kibana cho pipeline edit. Kibana Stack Management → Logstash Pipelines UI TỒN TẠI nhưng ít dùng production. Đại đa số SOC dùng file `/etc/logstash/conf.d/*.conf` + git version control + CI/CD deploy.
 
 `main.conf` thêm sau grok:
 ```ruby
