@@ -320,8 +320,10 @@ Không thêm detection-rule mới — Wazuh dùng ruleset built-in (OOTB) trong 
 | Wazuh Agent Win10 (DESKTOP-L7FCMBQ) | ✅ `active`, lastKeepAlive realtime |
 | alerts.json populated từ agent | ✅ 5+ CIS Windows benchmark alerts |
 | Multi-SIEM coexistence (Elastic + Wazuh) | ✅ Win10 ship 2 đầu song song |
+| FIM (File Integrity Monitoring) | ✅ Giám sát Driver/etc + Startup folders (realtime, report_changes) |
 
 ---
+
 
 ## 7. Pha 7 Quick stats
 
@@ -338,3 +340,32 @@ Không thêm detection-rule mới — Wazuh dùng ruleset built-in (OOTB) trong 
 ---
 
 *Pha 7 hoàn tất end-to-end. Multi-SIEM stack hoạt động song song. Sẵn sàng Pha 8 — AI/ML detection (Flask API trên VPS).*
+
+---
+
+## 8. Cấu hình FIM (File Integrity Monitoring) bổ sung (2026-07-01)
+
+Nhằm giám sát tính toàn vẹn của các file hệ thống và thư mục khởi động (Startup) nhạy cảm, khối cấu hình `<syscheck>` trong `ossec.conf` của Windows 10 Agent đã được cập nhật:
+
+### 8.1 Khối cấu hình mới được áp dụng
+```xml
+<syscheck>
+    <scan_on_start>yes</scan_on_start>
+    <frequency>1800</frequency>
+    <directories check_all="yes" realtime="yes" report_changes="yes">C:\Windows\System32\drivers\etc</directories>
+    <directories check_all="yes" realtime="yes" report_changes="yes">C:\Users\ADMIN\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup</directories>
+    <directories check_all="yes" realtime="yes" report_changes="yes">C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup</directories>
+</syscheck>
+```
+
+### 8.2 Kết quả xác thực (Verify) từ Agent Log
+Sau khi khởi động lại dịch vụ `WazuhSvc`, `ossec.log` đã ghi nhận việc nạp thành công các đường dẫn giám sát FIM với các tùy chọn `realtime` và `report_changes`:
+```
+2026/07/01 23:07:36 wazuh-agent: INFO: (6003): Monitoring path: 'c:\programdata\microsoft\windows\start menu\programs\startup', with options 'size | permissions | owner | group | mtime | inode | hash_md5 | hash_sha1 | hash_sha256 | attributes | report_changes | realtime'.
+2026/07/01 23:07:36 wazuh-agent: INFO: (6003): Monitoring path: 'c:\users\admin\appdata\roaming\microsoft\windows\start menu\programs\startup', with options 'size | permissions | owner | group | mtime | inode | hash_md5 | hash_sha1 | hash_sha256 | attributes | report_changes | realtime'.
+2026/07/01 23:07:36 wazuh-agent: INFO: (6003): Monitoring path: 'c:\windows\system32\drivers\etc', with options 'size | permissions | owner | group | mtime | inode | hash_md5 | hash_sha1 | hash_sha256 | attributes | report_changes | realtime'.
+2026/07/01 23:07:36 wazuh-agent: INFO: (6010): File integrity monitoring scan frequency: 1800 seconds
+2026/07/01 23:07:36 wazuh-agent: INFO: (6008): File integrity monitoring scan started.
+2026/07/01 23:07:37 wazuh-agent: INFO: (6012): Real-time file integrity monitoring started.
+```
+
