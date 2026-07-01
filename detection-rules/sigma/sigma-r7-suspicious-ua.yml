@@ -1,0 +1,34 @@
+title: Web Attack Tool User-Agent Detection
+id: 4e1059ed-5f3f-4357-add2-80e0d7470c19
+status: stable
+description: Detects HTTP requests from known web attack tool User-Agents (sqlmap, nikto, nmap, etc.)
+references:
+  - https://attack.mitre.org/techniques/T1595/002/
+author: gnid31
+date: 2026/06/27
+tags:
+  - attack.reconnaissance
+  - attack.t1595.002
+logsource:
+  product: apache
+  service: access
+detection:
+  selection:
+    user_agent.original|contains:
+      - 'sqlmap'
+      - 'nikto'
+      - 'Nmap'
+      - 'Nessus'
+      - 'w3af'
+      - 'burp'
+      - 'zap'
+      - 'wpscan'
+      - 'dirbuster'
+      - 'gobuster'
+      - 'masscan'
+      - 'acunetix'
+      - 'metasploit'
+  condition: selection
+falsepositives:
+  - Legitimate security scan from authorized scanner (whitelist src IP)
+level: high

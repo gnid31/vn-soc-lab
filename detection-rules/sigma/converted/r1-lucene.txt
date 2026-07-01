@@ -1,0 +1,1 @@
+((process.executable:(*\\powershell.exe OR *\\pwsh.exe OR *\\powershell_ise.exe)) AND (process.command_line:(*\-enc\ * OR *\-EncodedCommand* OR *\-ec\ * OR *\-EncodeCommand* OR *\ \-e\ *))) AND (NOT (process.command_line:(*Microsoft.PowerShell.Operation.Validation* OR *ScriptedDiagnostics*)))

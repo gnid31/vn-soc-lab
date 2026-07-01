@@ -1,0 +1,10 @@
+[Unit]
+Description=VN-SOC IOC feed updater (URLhaus recent daily pull)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vnsoc-ioc/ioc-feed-updater.sh
+User=root
+StandardOutput=journal
+StandardError=journal

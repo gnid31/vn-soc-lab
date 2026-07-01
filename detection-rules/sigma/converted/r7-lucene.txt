@@ -1,0 +1,1 @@
+user_agent.original:(*sqlmap* OR *nikto* OR *Nmap* OR *Nessus* OR *w3af* OR *burp* OR *zap* OR *wpscan* OR *dirbuster* OR *gobuster* OR *masscan* OR *acunetix* OR *metasploit*)

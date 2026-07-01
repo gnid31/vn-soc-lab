@@ -1,0 +1,44 @@
+title: PowerShell Encoded Command Execution
+id: a4cef1e3-85cc-4f63-9929-82bd5a192b55
+status: stable
+description: Detects PowerShell execution with -EncodedCommand parameter — common obfuscation for malicious payloads
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1027/
+author: gnid31
+date: 2026/06/25
+tags:
+  - attack.execution
+  - attack.t1059.001
+  - attack.defense_evasion
+  - attack.t1027
+logsource:
+  product: windows
+  category: process_creation
+detection:
+  selection_image:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\powershell_ise.exe'
+  selection_flag:
+    CommandLine|contains:
+      - '-enc '
+      - '-EncodedCommand'
+      - '-ec '
+      - '-EncodeCommand'
+      - ' -e '
+  filter_legit_admin:
+    CommandLine|contains:
+      - 'Microsoft.PowerShell.Operation.Validation'
+      - 'ScriptedDiagnostics'
+  condition: (selection_image and selection_flag) and not filter_legit_admin
+fields:
+  - Image
+  - CommandLine
+  - ParentImage
+  - User
+falsepositives:
+  - Legitimate admin scripts using encoded params for special characters
+  - Windows built-in diagnostic modules
+level: high
