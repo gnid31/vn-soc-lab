@@ -352,4 +352,28 @@ Detection coverage (9 rules → MITRE):
 
 ---
 
+## 9. Verify via Kibana GUI + TheHive UI
+
+### Verify SOAR pipeline
+1. **Kibana → Security → Alerts** → filter tag `VN-SOC-Lab` → click alert → confirm alert generated bởi rule Rn.
+2. **TheHive UI** (browser `http://192.168.154.165:9000` — cần SSH tunnel từ Kali local hoặc LAN direct):
+   - Login `soc@vn-soc-lab.local` / `VnSocLab2026!`
+   - Menu **Cases** → sort by `Created at` desc → thấy case auto-created gần nhất từ alert forwarder bridge (~30s sau alert fire).
+   - Click case → tab **Observables** → nếu workflow v2 (Pha 10 B1+B2) apply thì thấy URL/IP/UA auto-extracted.
+   - Tab **Details** → xem full `description` chứa raw alert JSON.
+
+### n8n workflow execution history
+1. Browser `http://127.0.0.1:5678` (SSH local forward từ Kali).
+2. Login credentials setup wizard.
+3. Menu **Executions** → click execution mới nhất → xem panels (Webhook → Parse → TheHive: Create Case) — green = success, red = fail.
+4. Click node đỏ → tab **Output** → error message để debug.
+
+### Alert bridge systemd log
+```
+Stack Management → không có UI cho systemd.
+Alternative: ssh vps 'sudo journalctl -u vnsoc-soar.timer -n 20 --no-pager'
+```
+
+---
+
 *Pha 9 hoàn tất. Lab end-to-end: Detection (Pha 3-8) → SOAR (Pha 9). Total 9 phases done. CV-ready.*

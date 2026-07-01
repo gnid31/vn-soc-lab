@@ -289,4 +289,24 @@ curl -s -X POST "http://192.168.154.165:9000/api/connector/cortex/job" \
 
 ---
 
+## 8. Verify via GUI
+
+### Cortex UI (http://192.168.154.163:9001)
+1. Browser → Cortex login `soc@vn-soc-lab.local`.
+2. Menu **Organisation → Analyzers** → thấy 275 available, 2 enabled (VirusTotal_GetReport, AbuseIPDB).
+3. Menu **Jobs** → xem history all analyzer runs với status Success/Failure.
+4. Click 1 job → tab **Report** → xem full JSON output analyzer (abuse score, taxonomies, VirusTotal detections).
+
+### TheHive → Cortex integration
+1. TheHive UI `http://192.168.154.165:9000` → open case #40 (hoặc case bất kỳ).
+2. Tab **Observables** → click observable IP (vd `185.220.101.1`).
+3. Tab **Analyzers** → tick `AbuseIPDB_2_0` → click **Run selected analyzers**.
+4. Đợi ~15s → tab **Reports** → xem report attached: `abuse.confidence.score`, `country_name`, `isp`, `tor` boolean.
+5. Cortex logo icon xuất hiện bên cạnh observable → chỉ báo enriched.
+
+### Cortex Dashboard
+- Cortex UI → homepage → thấy graph "Jobs per hour" + "Success rate" + "Analyzers usage".
+
+---
+
 *Pha 9.5 hoàn tất. SOC ops loop khép kín: detect → case → enrich → investigate → respond.*

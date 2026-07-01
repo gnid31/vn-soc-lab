@@ -437,4 +437,29 @@ User tự tạo trên Kibana UI theo template `detection-rules/R1-*.md §5`.
 
 ---
 
+## 9. Verify via Kibana GUI
+
+### Suricata alerts
+1. **Discover → suricata-*** → thấy 300+ docs (post-attack traffic).
+2. Add column `event_type`, `src_ip`, `dest_ip`, `alert.signature`, `alert.category`, `alert.severity`.
+3. Filter `event_type : "alert"` → chỉ alert events (skip flow/http/dns other types).
+4. Filter `alert.category : *scan*` → SCAN category alerts từ Nmap/masscan smoke-test.
+
+### DVWA Apache access log
+1. **Discover → dvwa-apache-*** → thấy docs mỗi HTTP request.
+2. Add column `source.address`, `http.request.method`, `url.original`, `http.response.status_code`, `user_agent.original`.
+3. Filter `http.response.status_code : (404 OR 403)` → attack surface probes.
+4. Filter `user_agent.original : *sqlmap*` → attack tool user agents.
+
+### R6/R7/R8 alerts
+1. **Security → Alerts** → filter `kibana.alert.rule.name : "*VN-SOC R6*" OR "*R7*" OR "*R8*"`.
+2. R6 4 alerts (Suricata network scan), R7 9 alerts (suspicious UA), R8 10 alerts (sensitive file probe).
+3. Click 1 R8 alert → expand → xem `url.original`, `source.address`, related events.
+
+### Dashboards có sẵn (Pha 10)
+- **VN-SOC Overview** — total + suricata categories + top src IPs
+- **VN-SOC Web Attack Surface** — ML score + Suricata + DVWA
+
+---
+
 *Pha 6 hoàn tất end-to-end. Sẵn sàng sang Pha 7 — Wazuh full stack HIDS trên SOC-Wazuh VM mới.*

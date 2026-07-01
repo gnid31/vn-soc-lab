@@ -260,4 +260,23 @@ Rule 100015 custom           → Startup file added/deleted
 
 ---
 
+## 8. Verify via Kibana GUI
+
+### Wazuh alerts trong Kibana (unified dual-SIEM view)
+1. **Discover → wazuh-alerts-*** → thấy 15+ docs từ Win10 syscheck.
+2. Add column `agent.name`, `rule.id`, `rule.level`, `rule.description`, `syscheck.path`, `syscheck.event`.
+3. Filter `rule.groups : "syscheck"` → FIM-only events.
+4. Filter `rule.id : ("550" OR "100015")` → default FIM + custom Startup folder rule.
+
+### R14 detection rule
+1. **Security → Alerts** → filter `kibana.alert.rule.name : "*R14*"` → thấy 9 alerts từ smoke-test (Startup file added/deleted + hosts modified).
+2. Click alert → panel → xem full `syscheck` block với `path`, `event`, `sha256_after` (if content changed).
+
+### Wazuh Dashboard (native UI, complement Kibana)
+1. Browser → `https://192.168.154.163` → login admin.
+2. Wazuh menu → **Modules → Integrity monitoring** → xem timeline agent DESKTOP-L7FCMBQ với file/registry changes.
+3. Modules → **Security events** → filter rule.id 100010-100016 → xem custom rules fire.
+
+---
+
 *Pha 13 hoàn tất. FIM layer thêm vào SIEM stack. Wazuh HIDS + Elastic SIEM dual-view Kibana unified. CV story: multi-vendor SIEM ship-back pattern.*

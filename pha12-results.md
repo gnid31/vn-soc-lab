@@ -232,4 +232,23 @@ docker run --log-driver=syslog --log-opt syslog-address=tcp://43.228.215.234:514
 
 ---
 
+## 8. Verify via Kibana GUI
+
+### ECS field aliases verify
+1. **Discover → winlogbeat-*** → KQL bar: `process.executable : *powershell*` → thấy events (alias resolve về `winlog.event_data.Image`).
+2. Add column `process.executable`, `user.name`, `file.path`, `registry.key`, `dns.question.name` — nếu doc có value tương ứng sẽ display.
+3. Query `user.name : "DESKTOP-L7FCMBQ\\ADMIN"` — thay vì raw `winlog.event_data.User`.
+4. **Stack Management → Data Views → winlogbeat-*** → tab Fields → search "process.executable" → thấy field type `alias`, target `winlog.event_data.Image`.
+
+### Syslog input verify
+1. **Discover → syslog-*** → default data view có 1+ doc từ smoke-test.
+2. Add column `log.syslog.severity.name`, `log.syslog.facility.name`, `host.hostname`, `message`.
+3. Filter `message : "VN-SOC test"` → smoke-test event từ Kali (Pha 12 §4.2 nc command).
+
+### Docker input verify
+1. **Discover → docker-*** → data view (nếu có docs shipped).
+2. Filter `type : "docker"` — Filebeat-tagged events.
+
+---
+
 *Pha 12 hoàn tất. Multi-source log ingestion ready cho production expansion. Analyst có thể query ECS name song song raw name.*

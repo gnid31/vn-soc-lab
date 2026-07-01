@@ -335,4 +335,31 @@ if [source][address] and [url][original] {
 
 ---
 
+## 8. Verify via Kibana GUI
+
+### R10 EQL sequence rule
+1. **Security → Rules → Detection rules** → tìm `[VN-SOC R10]` → click → tab **Rule execution results** → xem last run status (Success/Failed) + alerts count per run.
+2. **Security → Alerts** → filter `kibana.alert.rule.uuid : <R10-uuid>` → nếu Win10 endpoint có chain process→network→LSASS trong 10min thì thấy alert.
+
+### R11-R13 rules
+1. **Security → Rules** → filter tags `VN-SOC-Lab` → thấy 13 rules R1-R13.
+2. Click R11 → tab About → xem MITRE T1110 + Kibana rule type Threshold.
+3. **Security → Alerts** → filter theo `kibana.alert.rule.name : "*R13*"` → thấy indicator match alerts nếu URL match URLhaus feed.
+
+### GeoIP enrichment verify
+1. **Discover → suricata-*** → filter `source.geo.location : *` → thấy docs với `source.geo.country_name`, `source.as.organization_name`.
+2. **Analytics → Maps → VN-SOC: World Map — Attack Sources GeoIP** → world map render 7+ pins (synthetic external IPs từ smoke-test).
+3. Add column `source.geo.city_name`, `source.geo.country_code2`, `source.as.AUTONOMOUS_SYSTEM_ORGANIZATION`.
+
+### UserAgent parser verify
+1. **Discover → dvwa-apache-*** → add column `user_agent.name`, `user_agent.os.name`, `user_agent.device.name`.
+2. Filter `user_agent.name : "curl"` → thấy attack tool requests.
+
+### URLhaus IOC feed verify
+1. **Discover → dvwa-apache-*** → filter `tags : "ioc_match"` → thấy events matched malicious URL paths.
+2. Field `threat.indicator.provider : "urlhaus_recent"` xuất hiện trong tab Table doc detail.
+3. **Analytics → Canvas → VN-SOC Executive Dashboard** → embed 3 metrics count.
+
+---
+
 *Pha 11 hoàn tất. SIEM deep skills stack. Sẵn sàng CV interview cho SOC Analyst / Detection Engineer roles.*

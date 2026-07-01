@@ -553,4 +553,15 @@ Lưu ý security risk: attacker có thể abuse `MsMpEng.exe` để bypass detec
 
 ---
 
+## 10. Verify via Kibana GUI
+
+Sau khi Atomic Red Team chain replay xong, kiểm tra kết quả qua Kibana:
+
+1. **Kibana → Security → Alerts** → Time range **Last 24h** → filter `kibana.alert.rule.name : "[VN-SOC R1]*" OR ...` → thấy alerts từ R1 (PowerShell) + R3 (RunKey) + R4 (Brute force).
+2. Click alert → panel bên phải xem full context (Sysmon fields, ProcessGuid).
+3. **Discover → winlogbeat-*** → Open saved search `VN-SOC: Sysmon Process Creation` → filter `winlog.event_data.CommandLine : *EncodedCommand*` → pivot ProcessGuid → parent chain.
+4. R5 FP tune verify: `event.code : "3" AND winlog.event_data.Image.keyword : *\\agy.exe*` → 0 alerts post-tune.
+
+---
+
 *Pha 4 hoàn tất với chiến lược "lesson-first" thay vì "alert-count-first". Recruiter quan tâm SOC analyst biết debug + biết bài học hơn là số alert. 4 lesson trên đáng giá hơn 100 alert trùng lặp.*

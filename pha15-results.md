@@ -288,4 +288,35 @@ HIGH:     679
 
 ---
 
+## 10. Verify via Kibana GUI
+
+### Trivy CVE findings
+1. **Discover → vuln-scan-*** → thấy 768 docs first scan.
+2. Add column `vuln.severity`, `vuln.cve`, `vuln.package`, `vuln.target`, `vuln.installed_version`, `vuln.fixed_version`.
+3. Filter `vuln.severity : "CRITICAL"` → 89 critical findings.
+4. Filter `vuln.scanner : "trivy" AND vuln.target : "n8nio/n8n:1.74.1"` → top vulnerable image (243 findings).
+5. Sort desc theo `@timestamp` → xem findings mới nhất.
+
+### Aggregate view — top vulnerable targets
+1. **Discover → vuln-scan-*** → nhấn field `vuln.target.keyword` trong left panel → **Visualize** → auto-generate bar chart top 10 target.
+2. Alternative: Kibana → **Analytics → Visualize Library → Create → Lens** → drag `vuln.target.keyword` (top values) + count metric.
+
+### R18 alerts triage workflow
+1. **Security → Alerts** → filter `kibana.alert.rule.name : "*R18*"` → thấy R18 alerts fire.
+2. Click alert → panel expand → view `vuln.cve` + `vuln.primary_url` link tới NVD detail.
+3. Alert forward via SOAR bridge → **TheHive** case auto-created cho triage.
+
+### Nikto web scan (khi SOC-Tools online + weekly Sun 03:00 fire)
+1. **Discover → vuln-scan-*** → filter `vuln.scanner : "nikto"`.
+2. Add column `vuln.uri`, `vuln.method`, `vuln.description`, `vuln.severity`.
+3. Filter `vuln.severity : "HIGH"` → SQL injection / XSS / RCE findings.
+
+### systemd timer status check
+```
+Stack Management → Kibana → không có UI cho systemd.
+Alternative: cài Netdata trên VPS (đã có) → localhost:19999 → Systemd Services chart.
+```
+
+---
+
 *Pha 15 hoàn tất. Vulnerability management layer stack. Lab bây giờ có full "detect attack + know attack surface" story.*

@@ -261,4 +261,35 @@ Total lab rules: **17** (R1-R17). MITRE techniques covered: **17**.
 
 ---
 
+## 8. Verify via Kibana GUI
+
+### YARA scanner results
+1. **Discover → yara-scan-*** → thấy 5 findings smoke-test.
+2. Add column `yara.rule`, `yara.severity`, `file.path`, `file.hash.sha256`.
+3. Filter `NOT yara.severity : "test"` → skip EICAR test hit.
+4. **Security → Alerts** → filter `kibana.alert.rule.name : "*R15*"` → thấy critical alerts YARA malware.
+
+### Cowrie honeypot events
+1. **Discover → cowrie-*** → thấy 19+ events từ smoke-test.
+2. Add column `eventid`, `src_ip`, `username`, `password`, `input`, `session`.
+3. Filter `eventid : "cowrie.command.input"` → thấy commands attacker typed (vd `wget http://malicious...`).
+4. Filter `eventid : "cowrie.login.success"` → login pairs (bruteforce fake credentials).
+5. **Security → Alerts** → filter `*R16*` → 4+ Cowrie honeypot alerts.
+
+### UEBA anomaly detection
+1. **Discover → ueba-*** → thấy anomaly check results (mỗi run 6 metrics).
+2. Add column `ueba.metric`, `ueba.today_value`, `ueba.baseline_mean`, `ueba.z_score`, `ueba.is_anomaly`.
+3. Filter `ueba.is_anomaly : true` → chỉ anomaly hits.
+4. Sort desc theo `ueba.z_score` → xem outlier lớn nhất.
+5. **Security → Alerts** → filter `*R17*` → UEBA baseline drift alerts.
+
+### (Optional) Zeek NIDS — pending SOC-Tools deploy
+Sau khi Zeek deploy trên SOC-Tools:
+1. **Discover → zeek-conn-*** → connection metadata (5-tuple + duration + bytes).
+2. **Discover → zeek-http-*** → HTTP request full context.
+3. **Discover → zeek-ssl-*** → TLS handshake với JA3 fingerprint.
+4. **Discover → zeek-notice-*** → Zeek anomaly notices (SSH bruteforce, cert expiry).
+
+---
+
 *Pha 14 hoàn tất. Advanced SOC skills stack. Zeek deploy pending SOC-Tools power on.*

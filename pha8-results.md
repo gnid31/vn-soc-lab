@@ -292,4 +292,14 @@ R9 threshold 0.7 → fire trên TP (.env, LFI), skip FP nhẹ.
 
 ---
 
+## 8. Verify via Kibana GUI
+
+1. **Discover → dvwa-apache-*** → filter `ml.label : "malicious"` → thấy events từ smoke-test (sqli/lfi/xss/.env) với `ml.score >= 0.7`.
+2. Add column `ml.score`, `ml.label`, `url.original`, `source.address` — sort desc theo ml.score.
+3. **Security → Alerts** → filter `kibana.alert.rule.name : "[VN-SOC R9]*"` → 9 alerts fired smoke-test.
+4. Click alert → panel expand → view `ml.score`, `ml.threshold`, `ml.url` — ML enrichment context.
+5. **(optional) Dashboard `VN-SOC Web Attack Surface`** → embed histogram ML score distribution + Suricata alerts + DVWA ML-flagged request panel.
+
+---
+
 *Pha 8 hoàn tất end-to-end. ML enrichment pipeline hoạt động. Sẵn sàng Pha 9 — SOAR (TheHive + n8n).*
