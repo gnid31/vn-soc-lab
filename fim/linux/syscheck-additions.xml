@@ -1,0 +1,46 @@
+<!--
+  VN-SOC Pha 13 — Wazuh Agent syscheck config cho Linux hosts.
+  Chèn vào <syscheck> block trong /var/ossec/etc/ossec.conf
+  Sau đó: sudo systemctl restart wazuh-agent
+-->
+
+<syscheck>
+  <!-- Critical system config — báo alert ngay lập tức khi thay đổi -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/passwd,/etc/shadow,/etc/group,/etc/gshadow</directories>
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/sudoers,/etc/sudoers.d</directories>
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/ssh</directories>
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/pam.d,/etc/security</directories>
+
+  <!-- Web server + app config (SOC-Tools DVWA) -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/nginx,/etc/apache2</directories>
+
+  <!-- Cron jobs — persistence artifact -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/cron.d,/etc/cron.daily,/etc/cron.hourly,/etc/cron.weekly,/etc/cron.monthly</directories>
+  <directories check_all="yes" realtime="yes" report_changes="yes">/var/spool/cron</directories>
+
+  <!-- systemd unit files — persistence via new service -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/systemd/system,/lib/systemd/system,/usr/lib/systemd/system</directories>
+
+  <!-- SIEM stack config (VPS) — detect tampering of Logstash pipeline, ES config -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/etc/logstash,/etc/elasticsearch,/etc/kibana</directories>
+
+  <!-- VN-SOC custom scripts + IOC feed -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/opt/vnsoc-soar,/opt/vnsoc-ioc,/etc/vnsoc-soar.env,/etc/logstash/ioc</directories>
+
+  <!-- User SSH keys — lateral movement artifact -->
+  <directories check_all="yes" realtime="yes" report_changes="yes">/root/.ssh,/home/*/.ssh</directories>
+
+  <!-- Binaries — rootkit / trojanized binary detection -->
+  <directories check_all="yes" realtime="no">/bin,/sbin,/usr/bin,/usr/sbin,/usr/local/bin,/usr/local/sbin</directories>
+
+  <!-- Ignore paths — noisy or expected changes -->
+  <ignore>/etc/mtab</ignore>
+  <ignore>/etc/hosts.deny</ignore>
+  <ignore>/etc/resolv.conf</ignore>
+  <ignore type="sregex">^/proc</ignore>
+  <ignore type="sregex">^/sys</ignore>
+  <ignore type="sregex">.*\.log$</ignore>
+  <ignore type="sregex">.*\.swp$</ignore>
+
+  <frequency>1800</frequency>
+</syscheck>

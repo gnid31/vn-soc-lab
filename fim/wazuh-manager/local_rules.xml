@@ -1,0 +1,83 @@
+<!--
+  VN-SOC Pha 13 — Custom Wazuh Manager rules cho FIM alerts.
+  Deploy: sudo cp local_rules.xml → /var/ossec/etc/rules/local_rules.xml
+  (nếu chạy Docker: docker exec single-node-wazuh.manager-1 ... hoặc bind mount)
+  Sau đó: docker restart single-node-wazuh.manager-1
+  Wazuh default FIM rule group là 550 (added/modified/deleted). Custom rules
+  dưới đây override severity + gắn tag cho vn-soc-lab specific paths.
+-->
+
+<group name="syscheck,vn-soc-lab,">
+
+  <!-- Rule 100010: HIGH severity khi /etc/passwd hoặc /etc/shadow thay đổi -->
+  <rule id="100010" level="12">
+    <if_group>syscheck</if_group>
+    <match>/etc/passwd|/etc/shadow|/etc/sudoers</match>
+    <description>VN-SOC FIM: Critical user/auth file modified [$(file)]</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+  </rule>
+
+  <!-- Rule 100011: HIGH severity khi SSH authorized_keys thay đổi -->
+  <rule id="100011" level="12">
+    <if_group>syscheck</if_group>
+    <match>authorized_keys</match>
+    <description>VN-SOC FIM: SSH authorized_keys modified — lateral movement artifact [$(file)]</description>
+    <mitre>
+      <id>T1098.004</id>
+    </mitre>
+  </rule>
+
+  <!-- Rule 100012: HIGH severity SIEM stack config tamper -->
+  <rule id="100012" level="12">
+    <if_group>syscheck</if_group>
+    <match>/etc/logstash|/etc/elasticsearch|/etc/kibana</match>
+    <description>VN-SOC FIM: SIEM stack config file tampered [$(file)] — potential defense evasion</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Rule 100013: MEDIUM severity cron / systemd persistence -->
+  <rule id="100013" level="10">
+    <if_group>syscheck</if_group>
+    <match>/etc/cron|/var/spool/cron|/etc/systemd/system|/lib/systemd/system</match>
+    <description>VN-SOC FIM: Cron or systemd service modified — potential persistence [$(file)]</description>
+    <mitre>
+      <id>T1053.003</id>
+      <id>T1543.002</id>
+    </mitre>
+  </rule>
+
+  <!-- Rule 100014: Windows registry Run key modified -->
+  <rule id="100014" level="12">
+    <if_group>syscheck</if_group>
+    <match>HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Run|HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run</match>
+    <description>VN-SOC FIM: Windows Registry Run key modified — T1547.001 persistence [$(file)]</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Rule 100015: MEDIUM Startup folder file added -->
+  <rule id="100015" level="10">
+    <if_group>syscheck</if_group>
+    <match>Start Menu\\Programs\\Startup</match>
+    <description>VN-SOC FIM: File added to Windows Startup folder — T1547.001 persistence [$(file)]</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Rule 100016: HIGH severity Windows Defender exclusion tamper -->
+  <rule id="100016" level="14">
+    <if_group>syscheck</if_group>
+    <match>HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows Defender\\Exclusions</match>
+    <description>VN-SOC FIM: Windows Defender exclusion registry key modified — T1562.001 defense evasion [$(file)]</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+  </rule>
+
+</group>

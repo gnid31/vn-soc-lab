@@ -1,0 +1,32 @@
+## Filebeat trên SOC-Wazuh VM — ship Wazuh alerts.json → VPS Logstash
+## Deploy: sudo cp filebeat.yml /etc/filebeat/filebeat.yml + systemctl start filebeat
+
+filebeat.inputs:
+  - type: filestream
+    id: wazuh-alerts
+    enabled: true
+    paths:
+      # Docker volume mount cho Wazuh Manager alerts
+      - /var/lib/docker/volumes/single-node_wazuh_logs/_data/alerts/alerts.json
+    parsers:
+      - ndjson:
+          keys_under_root: true
+          add_error_key: true
+    fields:
+      source_type: wazuh-alerts
+    fields_under_root: false
+
+output.logstash:
+  hosts: ["43.228.215.234:5044"]
+
+# Optional: log level cho troubleshoot
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 5
+  permissions: 0644
+
+# Wazuh Manager Docker chạy on same host — Filebeat cần perm read alerts
+# → run Filebeat as root (default systemd user)
