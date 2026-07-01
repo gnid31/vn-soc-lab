@@ -154,6 +154,14 @@ gh auth login    # cùng flow như Kali
 | 8 | ML Detection (R9) | ✅ | TF-IDF + LogReg URL classifier, Flask Docker, Logstash enrichment |
 | 9 | SOAR & Case Management | ✅ | TheHive 5 + n8n + alert bridge → 34 cases auto |
 | 9.5 | Cortex Analyzer Integration | ✅ | Cortex 3.1.7 + VT + AbuseIPDB → TheHive observables auto-enrich |
+| 10 | ELK Ops Optimization | ✅ | ILM policy + saved objects + Data View filters + runtime field + Maps + Canvas — xem [`ELK-GUIDE.md`](ELK-GUIDE.md) |
+| 11 | SIEM Deep Skills R10-R13 | ✅ | EQL sequence + Sigma workflow + geoip + IOC feed URLhaus — xem [`pha11-results.md`](pha11-results.md) |
+| 12 | SIEM Depth v2 | ✅ | ECS field aliases + log source diversification (syslog + docker) — xem [`pha12-results.md`](pha12-results.md) |
+| 13 | FIM R14 | ✅ | Wazuh syscheck Win10 + Filebeat ship → Elastic unified — xem [`pha13-results.md`](pha13-results.md) |
+| 14 | Advanced SOC R15-R17 | ✅ | YARA malware + Cowrie honeypot + UEBA z-score (+ Zeek configs defer) — xem [`pha14-results.md`](pha14-results.md) |
+| 15 | Vulnerability Management R18 | ✅ | Trivy Docker+FS + Nikto weekly web + systemd timers, 768 CVE findings — xem [`pha15-results.md`](pha15-results.md) |
+
+**⭐ Docs tổng hợp:** [`MASTER-GUIDE.md`](MASTER-GUIDE.md) — single-page reference cover architecture + 15 pha + 18 rules + deploy quick-start + skills matrix.
 
 **Stack đang chạy:**
 

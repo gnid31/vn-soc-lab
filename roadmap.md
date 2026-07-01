@@ -1,18 +1,43 @@
 # VN-SOC Lab — Roadmap
 
-> **Mục đích:** ghi lại **kế hoạch** các pha sắp tới + design notes. Khi 1 hạng mục được triển khai xong, di chuyển nội dung sang [`report.md`](report.md) (đã verify thật), KHÔNG chỉ copy.
+> **Mục đích ban đầu:** ghi lại **kế hoạch** các pha sắp tới + design notes.
+>
+> **⛳ TRẠNG THÁI HIỆN TẠI (2026-07-01) — DỰ ÁN ĐÃ CHỐT:** 15 phases hoàn tất, 18 detection rules R1-R18, 19 MITRE ATT&CK techniques, 10 log source indices, 2 SIEMs parallel + SOAR + ML + FIM + YARA + honeypot + UEBA + vuln management.
+>
+> **Docs tổng hợp cuối cùng:** [`MASTER-GUIDE.md`](MASTER-GUIDE.md) single-page reference. Roadmap này giữ nguyên phần "kế hoạch" ban đầu để làm lịch sử planning + design decisions.
 
 ---
 
-## Tổng quan 5 pha
+## Tổng quan pha đã triển khai (cuối cùng: 15 pha)
 
-| Pha | Tên | Tuần | Trạng thái |
-|---|---|---|---|
-| 1 | SIEM Backend Deployment | T1 D1–D3 | ✅ Hoàn tất (xem report) |
-| 2 | Endpoint Telemetry | T1 D4–D5 | ✅ Hoàn tất (xem report) |
-| 3 | Detection Engineering | T1 D6–T2 D2 | ✅ Hoàn tất (5 rule deployed, 4 smoke-tested, R2 defer Pha 4) |
-| 4 | Adversary Emulation | T2 D3–D4 | 🔄 Sẵn sàng — bao gồm test R2 + tune R5 FP `agy.exe` |
-| 5 | Incident Response & Documentation | T2 D5–D7 | ✅ Hoàn tất (Incident Report VN-SOC-2026-0001 + template) |
+| Pha | Tên | Trạng thái |
+|---|---|---|
+| 1 | SIEM Backend Deployment | ✅ Hoàn tất |
+| 2 | Endpoint Telemetry | ✅ Hoàn tất |
+| 3 | Detection Engineering R1-R5 | ✅ Hoàn tất (5 KQL rules Windows telemetry) |
+| 4 | Adversary Emulation | ✅ Hoàn tất (Atomic Red Team chain + R5 FP tune) |
+| 5 | Incident Response | ✅ Hoàn tất (NIST 800-61 VN-SOC-2026-0001) |
+| 6 | Network IDS Layer R6-R8 | ✅ Hoàn tất (Suricata + DVWA + 3 web rules) |
+| 7 | Wazuh HIDS Full Stack | ✅ Hoàn tất (Manager + Indexer + Dashboard multi-SIEM) |
+| 8 | ML Detection R9 | ✅ Hoàn tất (Flask TF-IDF+LogReg URL classifier) |
+| 9 | SOAR TheHive + n8n | ✅ Hoàn tất (34 cases auto) |
+| 9.5 | Cortex Analyzer Integration | ✅ Hoàn tất (VT + AbuseIPDB) |
+| 10 | ELK Ops Optimization | ✅ Hoàn tất (ILM + saved objects + Maps + Canvas) |
+| 11 | SIEM Deep Skills R10-R13 | ✅ Hoàn tất (EQL sequence + Sigma workflow + geoip + IOC feed) |
+| 12 | SIEM Depth v2 | ✅ Hoàn tất (ECS aliases + log source diversification) |
+| 13 | FIM R14 | ✅ Hoàn tất (Wazuh syscheck Win10 + Elastic ship-back) |
+| 14 | Advanced SOC R15-R17 | ✅ YARA + Cowrie + UEBA (Zeek defer configs sẵn sàng) |
+| 15 | Vulnerability Management R18 | ✅ Hoàn tất (Trivy + Nikto + R18 rule, 768 CVE first scan) |
+
+**Legacy planning content** — 5 pha original kế hoạch ban đầu:
+
+| Pha | Tên gốc | Kế hoạch → thực tế |
+|---|---|---|
+| 1 | SIEM Backend Deployment | ✅ triển khai như plan |
+| 2 | Endpoint Telemetry | ✅ triển khai như plan |
+| 3 | Detection Engineering | ✅ mở rộng 5→18 rules |
+| 4 | Adversary Emulation | ✅ triển khai như plan |
+| 5 | Incident Response & Documentation | ✅ + mở rộng 10 pha extension (6-15) |
 
 ---
 

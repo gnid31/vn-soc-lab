@@ -89,19 +89,28 @@ Vì lab này:
    - Trên Kibana → Rules → check rule → **Export rule** → tải về file NDJSON.
    - Đặt file NDJSON cùng tên spec, commit.
 
-## Trạng thái 5 rule đăng ký
+## Trạng thái 18 rule đăng ký (R1-R18)
 
-| ID | Display name | MITRE | Spec | Enabled | Verify | Alerts fired |
-|---|---|---|---|---|---|---|
-| R1 | `[VN-SOC R1] PowerShell Encoded Command Execution` | T1059.001 | [R1](R1-T1059.001-powershell-encoded.md) | ✅ | ✅ 2026-06-25 | 5+1 |
-| R2 | `[VN-SOC R2] LSASS Memory Access` | T1003.001 | [R2](R2-T1003.001-lsass-access.md) | ✅ | ✅ 2026-06-25 (FP: MsMpEng) | 1 (Defender FP) |
-| R3 | `[VN-SOC R3] Registry Run Key Modification` | T1547.001 | [R3](R3-T1547.001-registry-run-key.md) | ✅ | ✅ 2026-06-25 | 4 |
-| R4 | `[VN-SOC R4] Multiple Failed Logon — Brute Force` | T1110 | [R4](R4-T1110-brute-force-login.md) | ✅ | ✅ 2026-06-25 (sau fix config) | 1 |
-| R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | [R5](R5-T1071.001-non-browser-outbound.md) | ✅ | ✅ 2026-06-25 + tuned (FP -100%) | 55 → 0 sau tune |
-| R6 | `[VN-SOC R6] Network Scan Detection` | T1595 | [R6](R6-T1595-network-scan.md) | ✅ | ✅ 2026-06-27 | 4 (suricata-*) |
-| R7 | `[VN-SOC R7] Suspicious User-Agent — Web Attack Tool` | T1595.002 | [R7](R7-T1595.002-suspicious-ua.md) | ✅ | ✅ 2026-06-27 (sau 2 KQL fix) | 9 (dvwa-apache-*) |
-| R8 | `[VN-SOC R8] Sensitive File Path Probe` | T1083 | [R8](R8-T1083-sensitive-file-probe.md) | ✅ | ✅ 2026-06-27 (sau 3 KQL fix) | 10 (dvwa-apache-*) |
-| R9 | `[VN-SOC R9] ML Malicious URL Detection` | T1190 | [R9](R9-T1190-ml-malicious-url.md) | ✅ | ✅ 2026-06-27 (Pha 8 ML pipeline) | 9 alerts (100% TP — sqli/lfi/xss/.env/.git/wp-config) |
+| ID | Display name | MITRE | Type | Spec / NDJSON | Verify |
+|---|---|---|---|---|---|
+| R1 | `[VN-SOC R1] PowerShell Encoded Command Execution` | T1059.001 | query | [R1](R1-T1059.001-powershell-encoded.md) / [ndjson](R1-T1059.001-powershell-encoded.ndjson) | ✅ 5+1 alerts |
+| R2 | `[VN-SOC R2] LSASS Memory Access` | T1003.001 | query | [R2](R2-T1003.001-lsass-access.md) / [ndjson](R2-T1003.001-lsass-access.ndjson) | ✅ 1 (Defender FP) |
+| R3 | `[VN-SOC R3] Registry Run Key Modification` | T1547.001 | query | [R3](R3-T1547.001-registry-run-key.md) / [ndjson](R3-T1547.001-registry-run-key.ndjson) | ✅ 4 alerts |
+| R4 | `[VN-SOC R4] Multiple Failed Logon — Brute Force` | T1110 | threshold | [R4](R4-T1110-brute-force-login.md) / [ndjson](R4-T1110-brute-force-login.ndjson) | ✅ 1 (sau fix threshold config) |
+| R5 | `[VN-SOC R5] Non-Browser Outbound HTTP/HTTPS` | T1071.001 | query | [R5](R5-T1071.001-non-browser-outbound.md) / [ndjson](R5-T1071.001-non-browser-outbound.ndjson) | ✅ 55 → 0 sau tune (Antigravity + OneDrive + SharePoint exclude) |
+| R6 | `[VN-SOC R6] Network Scan Detection` | T1595 | query | [R6](R6-T1595-network-scan.md) / [ndjson](R6-T1595-network-scan.ndjson) | ✅ 4 (suricata-*) |
+| R7 | `[VN-SOC R7] Suspicious User-Agent — Web Attack Tool` | T1595.002 | query | [R7](R7-T1595.002-suspicious-ua.md) / [ndjson](R7-T1595.002-suspicious-ua.ndjson) | ✅ 9 (sau 2 KQL fix) |
+| R8 | `[VN-SOC R8] Sensitive File Path Probe` | T1083 | query | [R8](R8-T1083-sensitive-file-probe.md) / [ndjson](R8-T1083-sensitive-file-probe.ndjson) | ✅ 10 (sau 3 KQL fix) |
+| R9 | `[VN-SOC R9] ML Malicious URL Detection` | T1190 | query | [R9](R9-T1190-ml-malicious-url.md) / [ndjson](R9-T1190-ml-malicious-url.ndjson) | ✅ 9 alerts (100% TP — Pha 8 ML) |
+| R10 | `[VN-SOC R10] Multi-Stage Attack — Process + Network + LSASS Sequence` | T1003.001 + T1059 | **EQL sequence** | [ndjson](R10.ndjson) | Pha 11 (EQL 10min window) |
+| R11 | `[VN-SOC R11] Web Login Brute Force — Threshold` | T1110 | threshold | [ndjson](R11.ndjson) | Pha 11 (DVWA /login.php POST ≥ 20/5min) |
+| R12 | `[VN-SOC R12] First-Seen Process Image on Endpoint` | T1204 | **new_terms** | [ndjson](R12.ndjson) | Pha 11 (14-day baseline drift) |
+| R13 | `[VN-SOC R13] URLhaus IOC Match — Threat Intel` | T1189 | query | [ndjson](R13.ndjson) | Pha 11 (URLhaus feed 5000 IOCs) |
+| R14 | `[VN-SOC R14] Wazuh FIM — Critical File/Registry Change` | T1547.001 + T1562.001 | query | [ndjson](R14.ndjson) | ✅ Pha 13 — 9 alerts (Startup + hosts) |
+| R15 | `[VN-SOC R15] YARA Malware Detection` | T1105 + T1204 | query | [ndjson](R15.ndjson) | Pha 14 (YARA 9 rules, EICAR + malware families) |
+| R16 | `[VN-SOC R16] Cowrie SSH Honeypot Interaction` | T1595 + T1110 | query | [ndjson](R16.ndjson) | Pha 14 — 4 alerts (Kali smoke-test) |
+| R17 | `[VN-SOC R17] UEBA Behavioral Anomaly — Z-Score Baseline Drift` | T1078 | query | [ndjson](R17.ndjson) | Pha 14 (Python z-score ≥ 2.0) |
+| R18 | `[VN-SOC R18] Vulnerability Scanner — Critical/High CVE Discovered` | T1190 + T1195 | query | [ndjson](R18.ndjson) | Pha 15 — 768 findings (89 CRITICAL + 679 HIGH) |
 
 ## Pitfalls / Lessons learned trong Pha 3
 

@@ -6,13 +6,14 @@ Built solo in ~10 days as a working portfolio for SOC Intern + AI-in-Security En
 
 | Property | Value |
 |---|---|
-| Status | ✅ **9.5/9 phases done** (all roadmap + 1 bonus) |
-| Detection rules | **9** (R1-R9) mapped to **9 MITRE ATT&CK techniques** |
+| Status | ✅ **15 phases done** (9 roadmap + 6 extended) |
+| Detection rules | **18** (R1-R18) mapped to **19 MITRE ATT&CK techniques**, 4/5 Kibana rule types |
 | SIEMs running parallel | **2** (Elastic primary + Wazuh HIDS) |
-| Auto-created TheHive cases (smoke-test) | **34** |
-| MITRE tactics covered | **6** of 14 (Initial Access / Execution / Persistence / Credential Access / Discovery / C2 / Reconnaissance) |
-| Total commits | ~25 |
-| Lessons learned documented | **~50** (~5-7 per phase) |
+| Log source indices | **10** (winlogbeat, suricata, dvwa-apache, wazuh-alerts, syslog, docker, yara-scan, cowrie, ueba, vuln-scan) |
+| Auto-created TheHive cases (smoke-test) | **34** với Cortex analyzer enrich |
+| Advanced skills | YARA malware + Cowrie honeypot + UEBA + FIM + Trivy vuln scan + Sigma workflow |
+| Total commits | ~50 |
+| Lessons learned documented | **~80** (~5-7 per phase) |
 
 ---
 
@@ -230,6 +231,12 @@ For full setup details per host: [`report.md`](report.md) (Vietnamese, ~1700 lin
 | 8 | ML Detection (R9) | [`pha8-results.md`](pha8-results.md) | TF-IDF + LogReg, Flask Docker, R9 fired 9 alerts 100% TP |
 | 9 | SOAR & Case Mgmt | [`pha9-results.md`](pha9-results.md) | TheHive 5 + n8n + free-tier alert bridge, 34 cases auto |
 | 9.5 | Cortex Analyzer Integration | [`pha9.5-results.md`](pha9.5-results.md) | VT + AbuseIPDB enrich, case observable score 100 (Tor exit) |
+| 10 | ELK Ops Optimization | [`ELK-GUIDE.md`](ELK-GUIDE.md) | ILM policy + saved objects + Data View filters + runtime field + Maps + Canvas |
+| 11 | SIEM Deep Skills R10-R13 | [`pha11-results.md`](pha11-results.md) | EQL sequence + Sigma workflow + geoip + IOC feed URLhaus |
+| 12 | SIEM Depth v2 | [`pha12-results.md`](pha12-results.md) | ECS field aliases + log source diversification (syslog + docker) |
+| 13 | FIM R14 | [`pha13-results.md`](pha13-results.md) | Wazuh syscheck Win10 + Filebeat ship → Elastic unified dual-SIEM |
+| 14 | Advanced SOC R15-R17 | [`pha14-results.md`](pha14-results.md) | YARA malware + Cowrie SSH honeypot + UEBA z-score + Zeek (defer) |
+| 15 | Vulnerability Management R18 | [`pha15-results.md`](pha15-results.md) | Trivy Docker+FS + Nikto weekly web + systemd timers, 768 CVE findings |
 
 ---
 
