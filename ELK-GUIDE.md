@@ -173,6 +173,22 @@ Web-focused view. Filter `ml.label: malicious` → còn attack thực sự.
    - Saved search table row 3 (drill-down rows)
 4. **Save** với title `VN-SOC: <domain>` → tag `vn-soc-lab`.
 
+> ⚠️ **Kibana 8.x pitfall khi build dashboard qua API:** panel JSON KHÔNG được có `embeddableConfig.savedObjectId` (deprecated Kibana 7.x). Phải reference embedded object qua `panelRefName` trỏ tới entry trong `references[]` array. Sai schema → dashboard mở báo lỗi `Cannot read properties of undefined (reading 'savedObjectId')`. Đúng format:
+> ```json
+> "panels": [{
+>   "type": "visualization",
+>   "gridData": {...},
+>   "panelIndex": "1",
+>   "embeddableConfig": {},         // empty, KHÔNG có savedObjectId
+>   "panelRefName": "panel_1"       // trỏ tới references[0]
+> }],
+> "references": [{
+>   "id": "my-viz-id",
+>   "name": "panel_1",
+>   "type": "visualization"
+> }]
+> ```
+
 ## 6. Runtime field — compute mà không reindex
 
 Runtime field = Painless script tính field mới **tại query time**. KHÔNG ghi vào ES index — mỗi lần query recompute.
