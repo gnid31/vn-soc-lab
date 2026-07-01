@@ -274,11 +274,63 @@ curl -sk -X POST "http://localhost:5601/api/data_views/data_view/<DV_ID>/fields"
   -d '{"fields":{"agent.ephemeral_id":{"customLabel":"","count":0}}}'
 ```
 
-### 8.3 Advanced Settings
-Stack Management → **Advanced Settings**:
-- `discover:searchFieldsFromSource: true` — load ít field hơn khi search
-- `discover:rowHeightOption: 3` — hiển thị 3 dòng per row (đọc CommandLine dài dễ hơn)
-- `defaultColumns: ["@timestamp","host.name","event.action"]` — set global column default
+### 8.3 Source filters — cắt field khỏi document detail view
+
+Field popularity chỉ ảnh hưởng left panel Discover. Khi click document row → expand detail, Kibana **vẫn show tất cả field trong `_source`** — vẫn lóa mắt.
+
+Fix bằng **Source filters** trong Data View settings:
+
+**GUI:** Stack Management → Data Views → chọn data view → tab **Source filters → Add**.
+
+Ví dụ patterns loại bỏ (đã áp dụng cho 3 data view lab):
+
+**winlogbeat-*** loại 44 patterns:
+```
+agent.*  ecs.*  @metadata.*  input.*  log.*
+winlog.opcode  winlog.task  winlog.keywords  winlog.version
+winlog.process.*  winlog.user.*  winlog.api  winlog.provider_guid  winlog.record_id
+winlog.event_data.RuleName  winlog.event_data.UtcTime  winlog.event_data.IntegrityLevel
+winlog.event_data.LogonId  winlog.event_data.LogonGuid  winlog.event_data.TerminalSessionId
+winlog.event_data.FileVersion  winlog.event_data.Description  winlog.event_data.Product
+winlog.event_data.Company  winlog.event_data.OriginalFileName  winlog.event_data.CurrentDirectory
+event.ingested  event.kind  event.original  event.created  event.hash
+host.architecture  host.mac  host.os.*  host.id  host.hostname
+@version  message
+```
+
+**suricata-*** loại `agent.*  ecs.*  @metadata.*  input.*  log.*  host.*  flow.*  http.request_body  http.response_body  http.request_headers  http.response_headers  app_proto*  vlan_id  community_id`
+
+**dvwa-apache-*** loại `agent.*  ecs.*  input.*  log.*  host.*  event.ingested  event.kind  event.dataset  process.*  url.username  url.password  url.fragment  url.path`
+
+**CLI:**
+```bash
+DV_ID="7da607b1-64db-4660-a2fe-b167d3efba44"
+curl -sk -u "elastic:<PWD>" -X POST \
+  "http://localhost:5601/api/data_views/data_view/$DV_ID" \
+  -H "kbn-xsrf: true" -H "Content-Type: application/json" \
+  -d '{"data_view":{"sourceFilters":[{"value":"agent.*"},{"value":"ecs.*"},{"value":"@metadata.*"}]}}'
+```
+
+**Kết quả đo được (winlogbeat-*):**
+```
+BEFORE: 44 leaf fields per document
+AFTER : 17 leaf fields per document (-61%)
+```
+
+### 8.4 Advanced Settings — bổ sung
+
+Stack Management → **Advanced Settings** (đã set trong lab):
+- `discover:maxDocFieldsDisplayed: 50` — cap fields shown khi expand doc
+- `discover:searchFieldsFromSource: false` — load fields via mapping, giảm bytes transfer
+- `discover:sampleSize: 500` — số row load per query (default OK)
+- `discover:rowHeightOption: 3` — 3 dòng per row (CommandLine dài dễ đọc)
+
+CLI apply:
+```bash
+curl -sk -u "elastic:<PWD>" -X POST "http://localhost:5601/api/kibana/settings" \
+  -H "kbn-xsrf: true" -H "Content-Type: application/json" \
+  -d '{"changes":{"discover:maxDocFieldsDisplayed":50,"discover:rowHeightOption":3}}'
+```
 
 ## 9. Deploy nhanh vào Kibana khác
 
