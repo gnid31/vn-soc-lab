@@ -1,6 +1,7 @@
 {
   "index_patterns": ["winlogbeat-*", "suricata-*", "dvwa-apache-*"],
   "priority": 500,
+  "composed_of": ["vnsoc-long-text"],
   "template": {
     "settings": {
       "number_of_shards": 1,
@@ -9,7 +10,7 @@
     }
   },
   "_meta": {
-    "description": "VN-SOC Lab custom indices — 30d ILM policy, single-node no replicas",
-    "managed_by": "vn-soc-lab pha10"
+    "description": "VN-SOC Lab custom indices — 30d ILM policy, single-node no replicas, ignore_above 8192 for long text",
+    "managed_by": "vn-soc-lab pha10.1"
   }
 }

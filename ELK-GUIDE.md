@@ -274,6 +274,31 @@ curl -sk -X POST "http://localhost:5601/api/data_views/data_view/<DV_ID>/fields"
   -d '{"fields":{"agent.ephemeral_id":{"customLabel":"","count":0}}}'
 ```
 
+### 8.2b Concepts — multi-field, ignore_above, source filter phân biệt
+
+**Multi-field:** ES auto-map field `text` → thêm sub-field `keyword`:
+```
+winlog.event_data.Image           (text — full-text, tokenized cho search "notepad")
+  └─ winlog.event_data.Image.keyword  (keyword — exact match, aggregation, sort)
+```
+- KQL `.keyword` bắt path đầy đủ `C:\\Windows\\notepad.exe`.
+- Text field aggregation fail vì tokenize.
+
+**ignore_above warning:** Kibana show ⚠️ trên field khi keyword có setting `ignore_above: 256` (default). Value > 256 chars vẫn có trong `_source` nhưng KHÔNG index → không search/aggregate được. Fix: component template `ignore_above: 8192` cho long text (Pha 10.1 đã áp dụng cho `CommandLine`, `ParentCommandLine`, `Hashes`).
+
+**Value trùng — 3 loại duplicate phổ biến:**
+
+| Loại | Ví dụ | Nguyên nhân |
+|---|---|---|
+| ECS ↔ raw duplicate | `event.code` = `winlog.event_id` = `"1"` | Winlogbeat ship 2 namespace (ECS + Windows raw) |
+| Multi-field .keyword | `Image` = `Image.keyword` | ES auto-generate sub-field |
+| Logstash `add_field` accident | `event.provider` = `["Sysmon","Sysmon"]` Array | Winlogbeat + Logstash cùng add → duplicate |
+
+**Fix duplication:**
+- Hide raw when ECS equivalent same value (source filter): `winlog.event_id`, `winlog.computer_name`, `winlog.provider_name`
+- Loại Logstash `add_field` thừa (đã fix `event.provider` trong Pha 10.1)
+- Component template `ignore_above` cho long fields
+
 ### 8.3 Source filters — cắt field khỏi document detail view
 
 Field popularity chỉ ảnh hưởng left panel Discover. Khi click document row → expand detail, Kibana **vẫn show tất cả field trong `_source`** — vẫn lóa mắt.
