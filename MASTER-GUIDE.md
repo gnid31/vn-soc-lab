@@ -1,9 +1,9 @@
 # VN-SOC Lab — Master Guide
 
-> Single-page consolidated reference cho toàn bộ dự án. Cover architecture, all 14 phases, 17 detection rules, log sources, deployment quick-start, troubleshooting, interview talking points. Từng phần link tới per-phase docs cho deep dive.
+> Single-page consolidated reference cho toàn bộ dự án. Cover architecture, all 15 phases, 18 detection rules, log sources, deployment quick-start, troubleshooting, interview talking points. Từng phần link tới per-phase docs cho deep dive.
 
 **Cập nhật:** 2026-07-01
-**Trạng thái:** 14 phases hoàn tất — CV-ready, lab reproducible
+**Trạng thái:** 15 phases hoàn tất — CV-ready, lab reproducible
 **Repo:** github.com/gnid31/vn-soc-lab
 
 ---
@@ -12,8 +12,8 @@
 
 1. [Executive summary](#1-executive-summary)
 2. [Full architecture](#2-full-architecture)
-3. [Phase timeline (1-14)](#3-phase-timeline)
-4. [Detection rules R1-R17](#4-detection-rules)
+3. [Phase timeline (1-15)](#3-phase-timeline)
+4. [Detection rules R1-R18](#4-detection-rules)
 5. [Log sources + indices](#5-log-sources)
 6. [Deployment quick-start](#6-deployment-quick-start)
 7. [Access & credentials matrix](#7-access-matrix)
@@ -29,12 +29,13 @@
 
 | Metric | Value |
 |---|---|
-| Detection rules total | **17** (R1-R17) covering **17 MITRE ATT&CK techniques** |
+| Detection rules total | **18** (R1-R18) covering **19 MITRE ATT&CK techniques** |
 | Kibana rule types | **4/5** (query + threshold + EQL sequence + new_terms + indicator match) |
 | SIEMs parallel | **2** (Elastic + Wazuh) |
 | SOAR pipeline | detect → case → observables → enrich → auto (TheHive + n8n + Cortex) |
 | ML detection | R9 TF-IDF+LogReg URL classifier, Flask + gunicorn Docker |
-| Log sources | **9 indices** (winlogbeat, suricata, dvwa-apache, wazuh-alerts, syslog, docker, yara-scan, cowrie, ueba) |
+| Log sources | **10 indices** (winlogbeat, suricata, dvwa-apache, wazuh-alerts, syslog, docker, yara-scan, cowrie, ueba, vuln-scan) |
+| Vulnerability scanning | Trivy daily (Docker + FS CVE) + Nikto weekly (web endpoints) — R18 fire on HIGH/CRITICAL |
 | Threat intel | URLhaus 5000 IOCs daily + VirusTotal + AbuseIPDB (Cortex analyzers) |
 | Honeypot | Cowrie SSH port 2222 public — capture attacker sessions |
 | UEBA | Python z-score baseline 6 metrics vs 14-day |
@@ -64,7 +65,7 @@ flowchart TB
     end
 
     subgraph VPS["☁️ VPS 43.228.215.234 — central plane"]
-        ELK["📊 Elastic 8.19<br/>ES + Kibana + Logstash<br/>9 indices, 17 rules"]
+        ELK["📊 Elastic 8.19<br/>ES + Kibana + Logstash<br/>9 indices, 18 rules"]
         ML["🤖 Flask ML URL classifier<br/>:5000 loopback"]
         N8N["⚙️ n8n workflow + SOAR bridge<br/>:5678 host network"]
         YARA["🦠 YARA scanner<br/>systemd daily 03:30"]
@@ -117,6 +118,7 @@ flowchart TB
 | 12 | SIEM Depth v2 | CV refresh + ECS aliases + log source diversification (syslog + docker) | [`pha12-results.md`](pha12-results.md) |
 | 13 | FIM R14 | Wazuh syscheck Win10 + Filebeat ship → Elastic unified | [`pha13-results.md`](pha13-results.md) |
 | 14 | Advanced SOC R15-R17 | YARA malware + Cowrie honeypot + UEBA + Zeek (Zeek defer) | [`pha14-results.md`](pha14-results.md) |
+| 15 | Vulnerability Management R18 | Trivy Docker+FS scan + Nikto weekly web + systemd timers + R18 rule | [`pha15-results.md`](pha15-results.md) |
 
 ---
 
@@ -141,8 +143,9 @@ flowchart TB
 | R15 | Query | T1105 + T1204 YARA malware | yara-scan match | Critical |
 | R16 | Query | T1595 + T1110 Cowrie honeypot | Cowrie login/command | Critical |
 | R17 | Query | T1078 UEBA anomaly | ueba z-score ≥ 2.0 | High |
+| R18 | Query | T1190 + T1195 Vuln scanner | vuln-scan Trivy+Nikto HIGH/CRITICAL | Critical |
 
-**MITRE ATT&CK techniques covered (17):** T1003.001, T1027, T1053.003, T1059/.001, T1071.001, T1078, T1083, T1098/.004, T1105, T1110, T1189, T1190, T1204, T1543.002, T1547.001, T1562.001, T1595/.002.
+**MITRE ATT&CK techniques covered (19):** T1003.001, T1027, T1053.003, T1059/.001, T1071.001, T1078, T1083, T1098/.004, T1105, T1110, T1189, T1190, T1195/.002, T1204, T1543.002, T1547.001, T1562.001, T1595/.002.
 
 ---
 
@@ -159,6 +162,7 @@ flowchart TB
 | `yara-scan-*` | YARA scanner NDJSON | `yara.rule`, `yara.severity`, `file.path`, `file.hash.sha256` |
 | `cowrie-*` | Cowrie SSH honeypot cowrie.json | `eventid`, `src_ip`, `username`, `password`, `input`, `session` |
 | `ueba-*` | UEBA Python script output | `ueba.metric`, `ueba.today_value`, `ueba.baseline_mean`, `ueba.z_score`, `ueba.is_anomaly` |
+| `vuln-scan-*` | Trivy + Nikto scanner output | `vuln.scanner`, `vuln.cve`, `vuln.severity`, `vuln.package`, `vuln.target`, `vuln.fixed_version` |
 
 **ILM policy:** `vnsoc-30d` áp cho tất cả (hot 7d → warm shrink + forcemerge → delete 30d).
 
@@ -212,7 +216,7 @@ cd honeypot/cowrie && docker compose up -d
 sudo cp fim/yara/filebeat-vpsside.yml /etc/filebeat/filebeat.yml
 sudo systemctl enable --now filebeat vnsoc-yara.timer vnsoc-ueba.timer
 
-# 7. Import 17 detection rules
+# 7. Import 18 detection rules
 for f in detection-rules/R*.ndjson; do
   curl -X POST ".../detection_engine/rules/_import" -F file=@$f
 done
