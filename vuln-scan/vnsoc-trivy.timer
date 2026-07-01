@@ -1,0 +1,10 @@
+[Unit]
+Description=VN-SOC Trivy daily vulnerability scan
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+RandomizedDelaySec=30m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -35,6 +35,17 @@ filebeat.inputs:
     fields: { source_type: vnsoc-ueba }
     fields_under_root: false
 
+  - type: filestream
+    id: vnsoc-vuln
+    enabled: true
+    paths:
+      - /var/log/vnsoc-vuln/trivy-*.ndjson
+      - /var/log/vnsoc-vuln/nikto-*.ndjson
+    parsers:
+      - ndjson: { keys_under_root: true, add_error_key: true }
+    fields: { source_type: vnsoc-vuln }
+    fields_under_root: false
+
 output.logstash:
   hosts: ["127.0.0.1:5044"]
 

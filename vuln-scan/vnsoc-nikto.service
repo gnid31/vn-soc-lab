@@ -1,0 +1,10 @@
+[Unit]
+Description=VN-SOC Nikto web application scan
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vnsoc-vuln/nikto-scan.sh
+User=root
+StandardOutput=journal
+StandardError=journal
