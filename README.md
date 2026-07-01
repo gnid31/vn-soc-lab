@@ -149,6 +149,13 @@ For full setup details per host: [`report.md`](report.md) (Vietnamese, ~1700 lin
 
 ---
 
+## Where to start
+
+- ⭐ **[`MASTER-GUIDE.md`](MASTER-GUIDE.md)** — single-page consolidated reference (recommended entrypoint). Architecture + 14 phases + 17 rules + deploy quick-start + troubleshooting + skills matrix.
+- [`report.md`](report.md) — main technical writeup (~1700 lines VI, Pha 1-9 detail).
+- [`ELK-GUIDE.md`](ELK-GUIDE.md) — analyst Discover / Dashboard walkthrough.
+- Deep dive per phase: `pha{N}-results.md` cho từng pha.
+
 ## Repository layout
 
 ```
