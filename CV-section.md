@@ -19,12 +19,18 @@
 - Xây dựng **detection ML inline**: train classifier URL malicious (TF-IDF char n-gram + LogisticRegression scikit-learn, dataset 459 URL synthetic), deploy Flask + gunicorn Docker multi-stage trên VPS (mem_limit 400 MB), Logstash filter-http enrich mỗi DVWA event với `[ml]` object → R9 fire 9 alerts 100% TP ở threshold 0.7.
 - Triển khai **SOAR đầy đủ**: TheHive 5.4 (Cassandra + ES 7) + n8n 1.74 + autossh reverse SSH tunnel cross-network + systemd timer poll ES alerts → n8n webhook (workaround Kibana Basic license không có `.webhook` connector). n8n workflow auto-extract observables (URL/IP/UA) từ alert payload → tạo TheHive case auto.
 - Tích hợp **Cortex 3 threat-intel enrichment**: VirusTotal + AbuseIPDB analyzers free-tier; mỗi observable trong case được auto-run analyzer phù hợp (AbuseIPDB cho IP, VirusTotal cho URL/hash); end-to-end detect → case → enrich trong ~60-90 giây không cần thao tác tay.
-- Sản xuất **~2700 dòng docs Vietnamese dual-path GUI + CLI** (report.md + 5 file pha results + 9 rule spec) đảm bảo reproducibility — recruiter clone repo có thể tái triển khai trong ~6 giờ không cần AI agent.
+- **Advanced detection engineering** — mở rộng lên **13 rules R1-R13 với 4/5 Kibana rule types** (query + threshold + EQL sequence + new_terms + indicator match). R10 EQL sequence rule bắt multi-stage attack (process_creation → network_connection → LSASS_access cùng host trong 10 phút) — behavioral detection thay signature. R12 new_terms baseline drift catch first-seen process image trên endpoint fleet.
+- **Sigma rule authoring** — viết detection portable YAML + `sigma-cli` convert sang Elastic Lucene / EQL / ES|QL / Splunk SPL / Sentinel KQL. Portable across SIEM vendors, no lock-in.
+- **Log enrichment pipeline production-grade** — Logstash filters: GeoIP src/dest IP (skip RFC1918 private) → `source.geo.location` (geo_point), `source.as.*` (ASN + org); useragent parser → `user_agent.name/os/device`; SHA256 fingerprint → `event.hash` dedup; URLhaus IOC feed 5000 malicious URL paths refresh daily via systemd timer → tag `ioc_match` matching events. R13 indicator match rule leveraging these tags.
+- **Kibana ops production** — ILM policy 30-day rollover (hot 7d → warm shrink+forcemerge → delete 30d), index template + component template (`geo_point` mapping, `ignore_above: 8192` cho long PowerShell CommandLine), Data View source filters giảm 44→17 field per doc, runtime field Painless script (`attack_score = ml.score*100 + bonuses`), 6 saved searches Discover column presets, 3 dashboards + Kibana Maps (world attack sources) + Canvas exec workpad.
+- Sản xuất **~3500 dòng docs Vietnamese dual-path GUI + CLI** (report.md + 7 file pha results + 13 rule spec + ELK-GUIDE.md + Sigma YAML) đảm bảo reproducibility — recruiter clone repo có thể tái triển khai trong ~6 giờ không cần AI agent.
 
 **Outcomes đo lường được:**
-- 34+ TheHive case auto-tạo từ smoke-test (3 manual + 31 auto-forwarded từ R6/R7/R8/R9).
-- 9 detection rule trải 6 MITRE tactics; alert volume cao nhất R6 (23/24h), R8 (19/24h), R9 (13/24h).
-- Multi-host stack: 1 VPS + 4 VM (Kali / Win10 / SOC-Tools / SOC-Wazuh), ~12 Docker container chạy đồng thời.
+- **13 detection rules** trải **11 MITRE ATT&CK techniques** (T1003/T1027/T1059/T1071/T1083/T1110/T1189/T1190/T1204/T1547/T1595); 4/5 Kibana rule types coverage.
+- 34+ TheHive case auto-tạo từ smoke-test; observables auto-extracted + Cortex analyzer auto-run.
+- 5000 URLhaus IOC feed refresh daily; Kibana Maps world heatmap 7+ external attack sources.
+- Multi-host stack: 1 VPS + 4 VM (Kali / Win10 / SOC-Tools / SOC-Wazuh), ~14 Docker container chạy đồng thời.
+- ELK ops: 30-day ILM policy, 3 custom dashboards + Maps + Canvas workpad, 6 saved searches + runtime field.
 
 ---
 
@@ -36,12 +42,19 @@
 - Elasticsearch 8.19, Kibana, Logstash multi-branch pipeline
 - Wazuh 4.9 full stack (Manager + Indexer + Dashboard)
 - TheHive 5, Cortex 3, n8n workflow automation
+- Logstash enrichment filters: geoip, useragent, translate (IOC feed), fingerprint (dedup), http (ML enrichment)
+- Kibana ops: **ILM policy**, index template + component template, Data View source filters, **runtime fields** (Painless), saved objects export/import bundle, **Maps** (geo_point), **Canvas** (essql expressions)
+- Threat intelligence feed integration: URLhaus (daily refresh via systemd timer)
 
 **Detection Engineering**
-- KQL custom-query + threshold rules, ECS v8 schema
-- MITRE ATT&CK technique mapping (9 techniques deployed)
+- Kibana rule types mastered: **query, threshold, EQL sequence, new_terms, indicator match** (4/5)
+- KQL / EQL / Lucene / ES|QL languages fluent
+- **Sigma YAML** portable rule authoring + `sigma-cli` convert cross-SIEM
+- ECS v8 schema — `event.code`, `source.geo.*`, `user_agent.*`, `threat.indicator.*`
+- MITRE ATT&CK technique mapping (**11 techniques** deployed)
 - Atomic Red Team adversary emulation + FP tuning iteratively
 - ML-based detection (TF-IDF char n-gram + LogisticRegression, scikit-learn 1.5)
+- Multi-stage attack detection via EQL sequence (`sequence by host.name with maxspan=10m [...]`)
 
 **Endpoint & Network Telemetry**
 - Sysmon (SwiftOnSecurity + custom ProcessAccess for LSASS), Winlogbeat
@@ -88,6 +101,10 @@
 | "Detection ML có thật không hay chỉ demo?" | Real model — TF-IDF char_wb (2,5) + LogReg balanced, 459 URL synthetic. 100% TP trên smoke-test (sqli/lfi/xss/.env/.git/wp-config). FP issue: dataset thiếu common .php benign → `/login.php` score 0.60 → mitigate bằng raise threshold 0.7 + plan augment với real Apache log. Demo MLOps iterability. |
 | "License Kibana Basic không có .webhook connector — bạn solve thế nào?" | Viết Python systemd timer poll `.internal.alerts-security.alerts-default-*` mỗi 30s qua REST API, state file `/var/lib/vnsoc-soar/state.json` track last-seen timestamp restart-safe, forward sang n8n webhook localhost. Free-tier SOAR pattern phù hợp lab/SME — không tốn $$$ Gold license. |
 | "Bạn có gặp issue nào với Cortex?" | 3 issues riêng: (1) ES container mem_limit 600m gây thrashing CPU 107% — bump 900m; (2) job_directory phải bind mount HOST path không named volume vì Cortex spawn sibling docker; (3) Cortex 3 CSRF strict — GUI bootstrap-only sau initial superadmin. Tất cả document trong pha9.5-results.md. |
+| "Multi-stage attack bạn detect thế nào?" | R10 EQL sequence rule — `sequence by host.name with maxspan=10m` gộp 3 event tuần tự: process creation từ shell tool (powershell/cmd/wscript/rundll32) → outbound network connection port 80/443 → LSASS memory access (Sysmon Event 10). Fire alert CRITICAL với MITRE T1003.001 + T1059. Behavioral detection thay signature-based — bắt được attack chain chưa từng thấy. |
+| "Sao dùng Sigma? Tại sao không viết KQL trực tiếp?" | Sigma YAML portable — 1 rule viết 1 lần, convert được sang KQL cho Elastic, SPL cho Splunk, KQL cho Sentinel, YAML cho ArcSight. Vendor lock-in giảm 100%. Team chuyển SIEM không phải rewrite rules. `sigma-cli` open-source từ SigmaHQ chuẩn hoá conversion. Lab tôi convert 2 Sigma → 4 backend outputs (Lucene, EQL, ES|QL, Splunk SPL). |
+| "Threat intel feed integration production thế nào?" | 3-tier: (1) automatic IOC pull — URLhaus daily feed 5000 malicious URLs via `curl` + Python parser + Logstash `translate` dictionary; (2) tagging — Logstash filter match URL → add tag `ioc_match` + `threat.indicator.provider`; (3) detection — R13 Kibana rule fire khi match. Toàn bộ pipeline không cần external SaaS (không như MISP heavy). |
+| "Analyst thấy log lóa quá — giải quyết thế nào?" | 4 layer optimize: (1) Data View **source filters** exclude 42 patterns noise (`agent.*`, `winlog.opcode`, duplicate raw fields) → giảm 44→17 field per doc; (2) field **popularity boost** — mark 22 core fields count=20 để show top Discover; (3) **saved searches** per event type với column preset; (4) **runtime field** `attack_score` compute at query time. Đo được: field visible giảm 61%. |
 
 ---
 

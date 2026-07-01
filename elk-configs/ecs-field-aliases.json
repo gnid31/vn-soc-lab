@@ -1,0 +1,27 @@
+{
+  "properties": {
+    "process": {
+      "properties": {
+        "executable":   { "type": "alias", "path": "winlog.event_data.Image" },
+        "command_line": { "type": "alias", "path": "winlog.event_data.CommandLine" },
+        "pid":          { "type": "alias", "path": "winlog.event_data.ProcessId" },
+        "parent": {
+          "properties": {
+            "executable":   { "type": "alias", "path": "winlog.event_data.ParentImage" },
+            "command_line": { "type": "alias", "path": "winlog.event_data.ParentCommandLine" },
+            "pid":          { "type": "alias", "path": "winlog.event_data.ParentProcessId" }
+          }
+        }
+      }
+    },
+    "user": {"properties": {"name": { "type": "alias", "path": "winlog.event_data.User" }}},
+    "file": {"properties": {"path": { "type": "alias", "path": "winlog.event_data.TargetFilename" }}},
+    "registry": {
+      "properties": {
+        "key":   { "type": "alias", "path": "winlog.event_data.TargetObject" },
+        "value": { "type": "alias", "path": "winlog.event_data.Details" }
+      }
+    },
+    "dns": {"properties": {"question": {"properties": {"name": { "type": "alias", "path": "winlog.event_data.QueryName" }}}}}
+  }
+}
