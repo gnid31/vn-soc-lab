@@ -1,0 +1,37 @@
+## Filebeat input block chèn vào Filebeat trên SOC-Tools VM (đã có sẵn cho Suricata + Apache).
+## Add Zeek JSON logs sau khi Zeek chạy.
+
+- type: filestream
+  id: zeek-conn
+  paths: ["/opt/zeek/logs/current/conn.log"]
+  parsers:
+    - ndjson: { keys_under_root: true, add_error_key: true }
+  fields: { source_type: zeek, zeek_log: conn }
+
+- type: filestream
+  id: zeek-http
+  paths: ["/opt/zeek/logs/current/http.log"]
+  parsers:
+    - ndjson: { keys_under_root: true, add_error_key: true }
+  fields: { source_type: zeek, zeek_log: http }
+
+- type: filestream
+  id: zeek-dns
+  paths: ["/opt/zeek/logs/current/dns.log"]
+  parsers:
+    - ndjson: { keys_under_root: true, add_error_key: true }
+  fields: { source_type: zeek, zeek_log: dns }
+
+- type: filestream
+  id: zeek-ssl
+  paths: ["/opt/zeek/logs/current/ssl.log"]
+  parsers:
+    - ndjson: { keys_under_root: true, add_error_key: true }
+  fields: { source_type: zeek, zeek_log: ssl }
+
+- type: filestream
+  id: zeek-notice
+  paths: ["/opt/zeek/logs/current/notice.log"]
+  parsers:
+    - ndjson: { keys_under_root: true, add_error_key: true }
+  fields: { source_type: zeek, zeek_log: notice }

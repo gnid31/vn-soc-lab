@@ -1,0 +1,46 @@
+## Filebeat trên VPS host — tail YARA scan.ndjson → Logstash local
+## Deploy: /etc/filebeat/filebeat.yml (overwrite mặc định)
+
+filebeat.inputs:
+  - type: filestream
+    id: vnsoc-yara-scan
+    enabled: true
+    paths:
+      - /var/log/vnsoc-yara/scan.ndjson
+    parsers:
+      - ndjson:
+          keys_under_root: true
+          add_error_key: true
+    fields:
+      source_type: vnsoc-yara
+    fields_under_root: false
+
+  - type: filestream
+    id: cowrie-honeypot
+    enabled: true
+    paths:
+      - /var/lib/docker/volumes/cowrie_cowrie_logs/_data/cowrie.json*
+    parsers:
+      - ndjson: { keys_under_root: true, add_error_key: true }
+    fields: { source_type: cowrie-honeypot }
+    fields_under_root: false
+
+  - type: filestream
+    id: vnsoc-ueba
+    enabled: true
+    paths:
+      - /var/log/vnsoc-ueba/anomalies.ndjson
+    parsers:
+      - ndjson: { keys_under_root: true, add_error_key: true }
+    fields: { source_type: vnsoc-ueba }
+    fields_under_root: false
+
+output.logstash:
+  hosts: ["127.0.0.1:5044"]
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 5

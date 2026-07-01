@@ -1,0 +1,10 @@
+[Unit]
+Description=VN-SOC YARA malware scan
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vnsoc-yara/yara-scan.sh
+User=root
+StandardOutput=journal
+StandardError=journal

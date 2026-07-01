@@ -1,0 +1,11 @@
+[Unit]
+Description=VN-SOC UEBA baseline anomaly detection
+After=network-online.target elasticsearch.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/vnsoc-ueba.env
+ExecStart=/usr/bin/python3 /opt/vnsoc-ueba/ueba-baseline.py
+User=namth
+StandardOutput=journal
+StandardError=journal

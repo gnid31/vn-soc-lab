@@ -1,0 +1,18 @@
+services:
+  cowrie:
+    image: cowrie/cowrie:latest
+    container_name: cowrie
+    restart: unless-stopped
+    ports:
+      # SSH honeypot — public 2222 (redirect 22 via host iptables NAT nếu muốn)
+      - "0.0.0.0:2222:2222"
+    volumes:
+      - cowrie_logs:/cowrie/cowrie-git/var/log/cowrie
+      - cowrie_downloads:/cowrie/cowrie-git/var/lib/cowrie/downloads
+      - cowrie_ttylog:/cowrie/cowrie-git/var/lib/cowrie/tty
+    mem_limit: 300m
+
+volumes:
+  cowrie_logs:
+  cowrie_downloads:
+  cowrie_ttylog:
