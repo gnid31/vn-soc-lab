@@ -2,6 +2,24 @@
   "template": {
     "mappings": {
       "properties": {
+        "source": {
+          "properties": {
+            "geo": {
+              "properties": {
+                "location": { "type": "geo_point" }
+              }
+            }
+          }
+        },
+        "destination": {
+          "properties": {
+            "geo": {
+              "properties": {
+                "location": { "type": "geo_point" }
+              }
+            }
+          }
+        },
         "winlog": {
           "properties": {
             "event_data": {
