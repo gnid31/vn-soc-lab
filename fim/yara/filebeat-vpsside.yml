@@ -46,6 +46,27 @@ filebeat.inputs:
     fields: { source_type: vnsoc-vuln }
     fields_under_root: false
 
+  # Pha 15.1 — Docker container logs qua log-json driver default
+  # Filebeat autodiscover mode: watch Docker events + tail /var/lib/docker/containers/*/*-json.log per container
+  - type: container
+    id: docker-containers
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    stream: all
+    fields:
+      source_type: docker-containers
+    fields_under_root: false
+
+processors:
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+      match_fields: []
+      match_pids: []
+      match_source: true
+      match_source_index: 4  # /var/lib/docker/containers/<CONTAINER_ID>/... — index 4 = container ID
+      cleanup_timeout: 60
+
 output.logstash:
   hosts: ["127.0.0.1:5044"]
 
